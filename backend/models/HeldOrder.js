@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const heldOrderSchema = new mongoose.Schema({
+    heldOrderID: {
+        type: String,
+        unique: true,
+        trim: true,
+    },
     orderNumber: {
         type: String,
         required: true,
@@ -69,7 +74,34 @@ const heldOrderSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
 });
+
+// Pre-save hook to generate heldOrderID and update updatedAt
+heldOrderSchema.pre("save", async function (next) {
+    // Generate heldOrderID if it's a new document and heldOrderID is not set
+    if (this.isNew && !this.heldOrderID) {
+        try {
+            const HeldOrder = this.constructor;
+            const count = await HeldOrder.countDocuments();
+            // Format: HLD001, HLD002, etc.
+            this.heldOrderID = `HLD${String(count + 1).padStart(3, "0")}`;
+        } catch (error) {
+            return next(error);
+        }
+    }
+    
+    this.updatedAt = Date.now();
+    next();
+});
+
+// Indexes
+heldOrderSchema.index({ heldOrderID: 1 });
+heldOrderSchema.index({ orderNumber: 1 });
+heldOrderSchema.index({ heldAt: -1 });
 
 const HeldOrder = mongoose.model("HeldOrder", heldOrderSchema);
 

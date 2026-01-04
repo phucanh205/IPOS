@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
+  productID: {
+    type: String,
+    unique: true,
+    trim: true,
+  },
   name: {
     type: String,
     required: true,
@@ -36,7 +41,34 @@ const productSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
+
+// Pre-save hook to generate productID and update updatedAt
+productSchema.pre("save", async function (next) {
+  // Generate productID if it's a new document and productID is not set
+  if (this.isNew && !this.productID) {
+    try {
+      const Product = this.constructor;
+      const count = await Product.countDocuments();
+      // Format: PRD001, PRD002, etc.
+      this.productID = `PRD${String(count + 1).padStart(3, "0")}`;
+    } catch (error) {
+      return next(error);
+    }
+  }
+  
+  // Update updatedAt
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Indexes
+productSchema.index({ productID: 1 });
+productSchema.index({ name: 1 });
 
 const Product = mongoose.model('Product', productSchema);
 

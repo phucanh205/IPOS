@@ -31,7 +31,6 @@ A Point of Sale (POS) system demo with React frontend and Node.js backend.
 ├── backend/
 │   ├── models/          # MongoDB schemas
 │   ├── routes/          # API routes
-│   ├── scripts/         # Seed scripts
 │   └── server.js        # Express server
 ├── frontend/
 │   ├── src/
@@ -77,12 +76,7 @@ mongod
 sudo systemctl start mongod
 ```
 
-5. Seed the database:
-```bash
-npm run seed
-```
-
-6. Start the backend server:
+5. Start the backend server:
 ```bash
 npm run dev
 ```
@@ -118,12 +112,6 @@ Frontend will run on `http://localhost:3000`
 ### Categories
 - `GET /api/categories` - Get all categories
 - `GET /api/categories/:id` - Get single category
-
-## Demo Data
-
-The seed script creates:
-- 7 categories (Burgers, Drinks, Desserts, Sides, Combos, Breakfast)
-- 18+ products across different categories
 
 ## Notes
 

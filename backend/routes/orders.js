@@ -106,7 +106,9 @@ router.post("/", async (req, res) => {
             total: total || 0,
             totalPaid: totalPaid || total || 0,
             changeDue: changeDue || 0,
-            status: "completed",
+            status: "awaiting_kitchen",  // Đơn mới, chờ bếp nhận
+            kitchenStatus: "new",
+            sentToKitchenAt: new Date(),
         });
 
         const savedOrder = await order.save();

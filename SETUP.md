@@ -25,7 +25,6 @@ sudo systemctl start mongod
 ```bash
 cd backend
 npm install
-npm run seed
 npm run dev
 ```
 
@@ -66,7 +65,7 @@ If port 5000 or 3000 is already in use:
 
 ### No Products Showing
 
-1. Make sure you ran `npm run seed` in the backend directory
+1. Use the Products page to add products manually
 2. Check MongoDB connection
 3. Verify products exist in database:
    ```bash
@@ -81,7 +80,6 @@ If port 5000 or 3000 is already in use:
 ### Backend Scripts
 - `npm start` - Start production server
 - `npm run dev` - Start development server with watch mode
-- `npm run seed` - Seed database with demo data
 
 ### Frontend Scripts
 - `npm run dev` - Start development server
@@ -99,8 +97,6 @@ Pos/
 │   ├── routes/          # API endpoints
 │   │   ├── categories.js
 │   │   └── products.js
-│   ├── scripts/         # Utility scripts
-│   │   └── seed.js      # Database seeding
 │   ├── server.js        # Express server
 │   └── package.json
 ├── frontend/
