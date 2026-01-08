@@ -214,16 +214,13 @@ function Home() {
     };
 
     const handleAddProduct = (product) => {
-        // If product already in order without customizations, just increase qty
+        // Kiểm tra xem sản phẩm đã tồn tại trong order chưa (chỉ cần cùng product._id)
         const existing = orderItems.find(
-            (item) =>
-                item.product._id === product._id &&
-                !item.size &&
-                (!item.toppings || item.toppings.length === 0) &&
-                !item.notes
+            (item) => item.product._id === product._id
         );
 
         if (existing) {
+            // Sản phẩm đã tồn tại, chỉ tăng số lượng
             setOrderItems((prev) =>
                 prev.map((item) =>
                     item.id === existing.id
@@ -236,6 +233,7 @@ function Home() {
                 )
             );
         } else {
+            // Sản phẩm chưa tồn tại, thêm mới
             const newItem = {
                 id: Date.now().toString() + Math.random().toString(16),
                 product,
@@ -271,10 +269,7 @@ function Home() {
                     ? {
                           ...item,
                           quantity: item.quantity + 1,
-                          totalPrice:
-                              (item.totalPrice / item.quantity ||
-                                  item.product.price) *
-                              (item.quantity + 1),
+                          totalPrice: item.product.price * (item.quantity + 1),
                       }
                     : item
             )
@@ -289,10 +284,7 @@ function Home() {
                         ? {
                               ...item,
                               quantity: item.quantity - 1,
-                              totalPrice:
-                                  (item.totalPrice / item.quantity ||
-                                      item.product.price) *
-                                  (item.quantity - 1),
+                              totalPrice: item.product.price * (item.quantity - 1),
                           }
                         : item
                 )
