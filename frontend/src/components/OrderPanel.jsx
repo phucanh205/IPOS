@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import OrderItemRow from "./OrderItemRow";
 
 function OrderPanel({
@@ -5,6 +6,7 @@ function OrderPanel({
     onItemClick,
     onIncreaseQty,
     onDecreaseQty,
+    onRemoveItem,
     onClose,
     onHoldOrder,
     onPlaceOrder,
@@ -14,6 +16,11 @@ function OrderPanel({
     paymentMethod = "Cash",
     onPaymentMethodChange,
 }) {
+    const [deleteModal, setDeleteModal] = useState({
+        isOpen: false,
+        itemToDelete: null,
+    });
+
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const tax = Math.round(subtotal * 0.1); // 10% tax như trong hình
     const total = subtotal + tax;
@@ -56,6 +63,30 @@ function OrderPanel({
                 changeDue: 0, // Mặc định không có tiền thừa
             });
         }
+    };
+
+    const handleDeleteClick = (item) => {
+        setDeleteModal({
+            isOpen: true,
+            itemToDelete: item,
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteModal.itemToDelete && onRemoveItem) {
+            onRemoveItem(deleteModal.itemToDelete.id);
+        }
+        setDeleteModal({
+            isOpen: false,
+            itemToDelete: null,
+        });
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteModal({
+            isOpen: false,
+            itemToDelete: null,
+        });
     };
 
     return (
@@ -121,6 +152,7 @@ function OrderPanel({
                         onClick={() => onItemClick(item)}
                         onIncreaseQty={() => onIncreaseQty(item.id)}
                         onDecreaseQty={() => onDecreaseQty(item.id)}
+                        onDelete={() => handleDeleteClick(item)}
                     />
                 ))}
                 {items.length === 0 && (
@@ -197,6 +229,34 @@ function OrderPanel({
                     </button>
                 </div>
             </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteModal.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Xác nhận xóa sản phẩm
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                        Bạn có chắc chắn muốn xóa "{deleteModal.itemToDelete?.product?.name}" khỏi giỏ hàng không?
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleCancelDelete}
+                            className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700"
+                        >
+                            Xác nhận
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </div>
     );
 }

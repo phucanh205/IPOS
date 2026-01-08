@@ -300,6 +300,10 @@ function Home() {
         );
     };
 
+    const handleRemoveItem = (id) => {
+        setOrderItems((prev) => prev.filter((item) => item.id !== id));
+    };
+
     const handleCloseOrder = () => {
         if (orderItems.length > 0) {
             setCloseOrderConfirm(true);
@@ -414,6 +418,7 @@ function Home() {
                                 onItemClick={handleOpenEdit}
                                 onIncreaseQty={handleIncreaseQty}
                                 onDecreaseQty={handleDecreaseQty}
+                                onRemoveItem={handleRemoveItem}
                                 onClose={handleCloseOrder}
                                 onHoldOrder={handleHoldOrder}
                                 onPlaceOrder={handlePlaceOrder}
@@ -423,6 +428,27 @@ function Home() {
                                 paymentMethod={paymentMethod}
                                 onPaymentMethodChange={setPaymentMethod}
                             />
+                        </div>
+                        
+                        {/* Mobile Order Panel */}
+                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+                            <div className="max-h-96 overflow-y-auto">
+                                <OrderPanel
+                                    items={orderItems}
+                                    onItemClick={handleOpenEdit}
+                                    onIncreaseQty={handleIncreaseQty}
+                                    onDecreaseQty={handleDecreaseQty}
+                                    onRemoveItem={handleRemoveItem}
+                                    onClose={handleCloseOrder}
+                                    onHoldOrder={handleHoldOrder}
+                                    onPlaceOrder={handlePlaceOrder}
+                                    orderType={orderType}
+                                    onOrderTypeChange={setOrderType}
+                                    tableNumber={tableNumber}
+                                    paymentMethod={paymentMethod}
+                                    onPaymentMethodChange={setPaymentMethod}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

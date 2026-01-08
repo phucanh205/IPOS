@@ -12,6 +12,7 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
     const [imagePreview, setImagePreview] = useState(null);
     const [imageUrl, setImageUrl] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [errors, setErrors] = useState({});
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -25,6 +26,7 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
             setShowOnPos(initialData?.showOnPos ?? true);
             setImageUrl(initialData?.image || "");
             setImagePreview(initialData?.image || null);
+            setErrors({});
         }
     }, [open, initialData]);
 
@@ -77,12 +79,32 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
         fileInputRef.current?.click();
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        
+        if (!name.trim()) {
+            newErrors.name = "Vui lòng nhập tên món ăn";
+        }
+        
+        if (!categoryId) {
+            newErrors.categoryId = "Vui lòng chọn danh mục";
+        }
+        
+        if (!price || price <= 0) {
+            newErrors.price = "Vui lòng nhập giá lớn hơn 0";
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!name.trim()) {
-            alert("Vui lòng nhập tên món ăn");
+        
+        if (!validateForm()) {
             return;
         }
+        
         const category = categories.find((c) => c._id === categoryId);
         onSave({
             name,
@@ -134,11 +156,21 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        errors.name ? "border-red-500" : "border-gray-300"
+                                    }`}
                                     placeholder="Ví dụ: Burger bò phô mai"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        if (errors.name) {
+                                            setErrors({ ...errors, name: "" });
+                                        }
+                                    }}
                                 />
+                                {errors.name && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -147,11 +179,16 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
                                         Danh mục
                                     </label>
                                     <select
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                            errors.categoryId ? "border-red-500" : "border-gray-300"
+                                        }`}
                                         value={categoryId}
-                                        onChange={(e) =>
-                                            setCategoryId(e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            setCategoryId(e.target.value);
+                                            if (errors.categoryId) {
+                                                setErrors({ ...errors, categoryId: "" });
+                                            }
+                                        }}
                                     >
                                         <option value="">Chọn danh mục</option>
                                         {categories
@@ -175,16 +212,24 @@ function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
                                         <input
                                             type="number"
                                             min="0"
-                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                errors.price ? "border-red-500" : "border-gray-300"
+                                            }`}
                                             value={price}
-                                            onChange={(e) =>
-                                                setPrice(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                setPrice(e.target.value);
+                                                if (errors.price) {
+                                                    setErrors({ ...errors, price: "" });
+                                                }
+                                            }}
                                         />
                                         <span className="text-gray-500 text-xs">
                                             VND
                                         </span>
                                     </div>
+                                    {errors.price && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.price}</p>
+                                    )}
                                 </div>
 
                                 <div>
