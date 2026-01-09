@@ -86,10 +86,12 @@ export const deleteHeldOrder = async (id) => {
 };
 
 // Orders API
-export const getOrders = async (search = "", status = "") => {
+export const getOrders = async (search = "", status = "", startDate = "", endDate = "") => {
     const params = {};
     if (search) params.search = search;
     if (status) params.status = status;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
     const response = await api.get("/orders", { params });
     return response.data;
 };

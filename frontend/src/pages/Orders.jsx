@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import SearchBar from "../components/SearchBar";
+import DateRangePicker from "../components/DateRangePicker";
 import DateTimeDisplay from "../components/DateTimeDisplay";
 import OrderDetailModal from "../components/OrderDetailModal";
 import { getOrders } from "../services/api";
@@ -8,17 +9,23 @@ import { getOrders } from "../services/api";
 function Orders() {
     const [orders, setOrders] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
         loadOrders();
-    }, [searchQuery]);
+    }, [searchQuery, dateRange]);
 
     const loadOrders = async () => {
         setLoading(true);
         try {
-            const data = await getOrders(searchQuery);
+            const data = await getOrders(
+                searchQuery, 
+                "", 
+                dateRange.startDate, 
+                dateRange.endDate
+            );
             setOrders(data || []);
         } catch (error) {
             console.error("Error loading orders:", error);
@@ -30,6 +37,10 @@ function Orders() {
 
     const handleSearch = (query) => {
         setSearchQuery(query);
+    };
+
+    const handleDateChange = (range) => {
+        setDateRange(range);
     };
 
     const handleViewDetail = (order) => {
@@ -83,6 +94,11 @@ function Orders() {
                             <SearchBar
                                 onSearch={handleSearch}
                                 placeholder="Tìm theo mã đơn, khách hàng hoặc số tiền"
+                            />
+                            <DateRangePicker
+                                onDateChange={handleDateChange}
+                                startDate={dateRange.startDate}
+                                endDate={dateRange.endDate}
                             />
                             <DateTimeDisplay />
                         </div>

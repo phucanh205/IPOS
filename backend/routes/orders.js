@@ -6,7 +6,7 @@ const router = express.Router();
 // Get all orders
 router.get("/", async (req, res) => {
     try {
-        const { search, status } = req.query;
+        const { search, status, startDate, endDate } = req.query;
         let query = {};
 
         if (search) {
@@ -27,6 +27,17 @@ router.get("/", async (req, res) => {
 
         if (status) {
             query.status = status;
+        }
+
+        // Date range filter
+        if (startDate || endDate) {
+            query.createdAt = {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate + "T00:00:00.000Z");
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate + "T23:59:59.999Z");
+            }
         }
 
         const orders = await Order.find(query)
