@@ -86,7 +86,7 @@ function HeldOrders() {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-gray-100">
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
@@ -95,13 +95,17 @@ function HeldOrders() {
                         <h1 className="text-xl font-semibold text-gray-900">
                             Đơn hàng tạm giữ
                         </h1>
-                        <div className="flex items-center gap-4">
-                            <SearchBar
-                                onSearch={handleSearch}
-                                placeholder="Tìm kiếm đơn hàng"
-                            />
-                            <DateTimeDisplay />
-                        </div>
+                        <DateTimeDisplay />
+                    </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="bg-white border-b border-gray-200 px-6 py-3">
+                    <div className="flex items-center gap-4">
+                        <SearchBar
+                            onSearch={handleSearch}
+                            placeholder="Tìm kiếm đơn hàng"
+                        />
                     </div>
                 </div>
 
@@ -120,7 +124,7 @@ function HeldOrders() {
                             {heldOrders.map((order) => (
                                 <div
                                     key={order._id}
-                                    className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div>

@@ -2,19 +2,25 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+const STORAGE_KEY = 'pos_auth';
+
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [auth, setAuth] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in from localStorage immediately
     const checkAuth = () => {
       try {
-        const savedUser = localStorage.getItem('pos_user');
-        if (savedUser) {
-          setUser(savedUser);
-          setIsAuthenticated(true);
+        const savedAuth = localStorage.getItem(STORAGE_KEY);
+        if (savedAuth) {
+          setAuth(JSON.parse(savedAuth));
+          return;
+        }
+
+        const legacyUser = localStorage.getItem('pos_user');
+        if (legacyUser) {
+          setAuth({ user: { username: legacyUser }, token: null });
         }
       } catch (error) {
         console.error('Error checking auth:', error);
@@ -26,11 +32,16 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  const login = (username) => {
+  const login = (authPayload) => {
     try {
-      localStorage.setItem('pos_user', username);
-      setUser(username);
-      setIsAuthenticated(true);
+      const normalized =
+        typeof authPayload === 'string'
+          ? { user: { username: authPayload }, token: null }
+          : authPayload;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.removeItem('pos_user');
+      setAuth(normalized);
     } catch (error) {
       console.error('Error saving auth:', error);
     }
@@ -38,16 +49,20 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     try {
+      localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('pos_user');
-      setUser(null);
-      setIsAuthenticated(false);
+      setAuth(null);
     } catch (error) {
       console.error('Error clearing auth:', error);
     }
   };
 
+  const isAuthenticated = !!auth;
+  const user = auth?.user || null;
+  const token = auth?.token || null;
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

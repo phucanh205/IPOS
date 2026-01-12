@@ -9,6 +9,11 @@ const api = axios.create({
     },
 });
 
+export const loginUser = async (username, password) => {
+    const response = await api.post("/auth/login", { username, password });
+    return response.data;
+};
+
 export const getProducts = async (categoryId = null, search = "") => {
     const params = {};
     if (categoryId && categoryId !== "all") {

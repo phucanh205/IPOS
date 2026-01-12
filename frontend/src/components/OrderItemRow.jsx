@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 function OrderItemRow({ item, onClick, onIncreaseQty, onDecreaseQty, onDelete }) {
     const formatPrice = (price) =>
         new Intl.NumberFormat("vi-VN").format(price) + " VND";
@@ -27,9 +25,9 @@ function OrderItemRow({ item, onClick, onIncreaseQty, onDecreaseQty, onDelete })
             {/* Item content */}
             <div
                 onClick={onClick}
-                className="w-full flex items-center gap-3 bg-white rounded-2xl p-3 border border-transparent hover:border-blue-400 hover:shadow-sm text-left transition-all cursor-pointer pr-8"
+                className="w-full flex items-center gap-4 bg-gray-50 rounded-lg p-4 border border-gray-300 text-left transition-colors cursor-pointer pr-12"
             >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
                     <img
                         src={item.product.image}
                         alt={item.product.name}
@@ -37,45 +35,44 @@ function OrderItemRow({ item, onClick, onIncreaseQty, onDecreaseQty, onDelete })
                     />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-semibold text-gray-800 truncate">
-                            {item.product.name}
-                        </h4>
-                        <span className="text-sm font-semibold text-emerald-600 ml-2 whitespace-nowrap">
-                            {formatPrice(item.totalPrice)}
-                        </span>
-                    </div>
-                    <div className="flex justify-between items-center mt-1 text-xs text-gray-500">
-                        <span className="truncate">
-                            {item.quantity}x{toppingsText && ` • ${toppingsText}`}
-                            {item.notes && ` • ${item.notes}`}
-                        </span>
-                        <span className="whitespace-nowrap ml-2">
-                            SL: {item.quantity}
-                        </span>
+                    <h4 className="text-sm font-semibold text-gray-900 truncate">
+                        {item.product.name}
+                    </h4>
+                    <div className="mt-1 text-xs text-gray-500 truncate">
+                        {item.quantity}x{toppingsText && ` • ${toppingsText}`}
+                        {item.notes && ` • ${item.notes}`}
                     </div>
                 </div>
-                <div className="flex items-center gap-1 ml-2">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDecreaseQty();
-                        }}
-                        className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white shadow-sm"
-                    >
-                        -
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onIncreaseQty();
-                        }}
-                        className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white shadow-sm"
-                    >
-                        +
-                    </button>
+
+                <div className="flex flex-col items-end gap-2">
+                    <div className="text-sm font-semibold text-emerald-600 whitespace-nowrap">
+                        {formatPrice(item.totalPrice)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDecreaseQty();
+                            }}
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white shadow-sm"
+                        >
+                            -
+                        </button>
+                        <span className="text-xs font-semibold text-gray-700 min-w-7 text-center">
+                            {item.quantity}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onIncreaseQty();
+                            }}
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white shadow-sm"
+                        >
+                            +
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

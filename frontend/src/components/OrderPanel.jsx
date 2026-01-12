@@ -21,6 +21,8 @@ function OrderPanel({
         itemToDelete: null,
     });
 
+    const isCartEmpty = items.length === 0;
+
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const tax = Math.round(subtotal * 0.1); // 10% tax như trong hình
     const total = subtotal + tax;
@@ -90,7 +92,8 @@ function OrderPanel({
     };
 
     return (
-        <div className="w-full lg:w-96 xl:w-[420px] bg-slate-50 border-l border-gray-200 h-full flex flex-col rounded-3xl lg:rounded-none lg:rounded-l-3xl overflow-hidden">
+        <div className="w-full h-full flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl ring-2 ring-gray-300 border-2 border-gray-200">
+            {/* Header */}
             <div className="px-6 pt-6 pb-4 border-b border-gray-200 flex items-center justify-between">
                 <div>
                     <div className="text-sm text-gray-400">{tableNumber}</div>
@@ -107,7 +110,7 @@ function OrderPanel({
                 </button>
             </div>
 
-            {/* Dine in / Take away / Delivery */}
+            {/* Order Type */}
             <div className="px-6 pt-4">
                 <div className="bg-slate-100 rounded-full p-1 flex text-xs font-medium">
                     <button
@@ -144,7 +147,7 @@ function OrderPanel({
             </div>
 
             {/* Items */}
-            <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-2">
+            <div className="flex-1 overflow-y-auto px-3 pt-4 space-y-3">
                 {items.map((item) => (
                     <OrderItemRow
                         key={item.id}
@@ -212,18 +215,36 @@ function OrderPanel({
                         <span>QR Code</span>
                     </button>
                 </div>
-                <div className="flex gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={handleHoldOrder}
-                        disabled={items.length === 0}
-                        className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCartEmpty}
+                        title={
+                            isCartEmpty
+                                ? "Giỏ hàng đang trống"
+                                : "Giữ đơn"
+                        }
+                        className={`py-3 px-4 rounded-xl font-medium border transition-colors ${
+                            isCartEmpty
+                                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                        }`}
                     >
-                        Tạm giữ
+                        Giữ đơn
                     </button>
                     <button
                         onClick={handlePlaceOrder}
-                        disabled={items.length === 0}
-                        className="flex-1 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCartEmpty}
+                        title={
+                            isCartEmpty
+                                ? "Giỏ hàng đang trống"
+                                : "Thanh toán"
+                        }
+                        className={`py-3 px-4 rounded-xl font-semibold transition-colors ${
+                            isCartEmpty
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : "bg-green-600 text-white hover:bg-green-700"
+                        }`}
                     >
                         Thanh toán
                     </button>

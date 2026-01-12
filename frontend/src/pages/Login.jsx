@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { loginUser } from "../services/api";
 import "./Login.css";
 
 function Login() {
@@ -10,6 +11,13 @@ function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    const getRedirectPath = (role) => {
+        if (role === "cashier") return "/home";
+        if (role === "admin") return "/dashboard";
+        if (role === "kitchen") return "/home";
+        return "/home";
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,13 +29,16 @@ function Login() {
 
         setIsLoading(true);
 
-        // Simulate login (demo - no real authentication)
-        setTimeout(() => {
-            // Save to localStorage
-            login(username);
+        try {
+            const data = await loginUser(username, password);
+            login({ token: data.token, user: data.user });
+            navigate(getRedirectPath(data.user?.role), { replace: true });
+        } catch (error) {
+            alert("Đăng nhập thất bại! Kiểm tra lại tài khoản/mật khẩu.");
+            console.error("Login error:", error);
+        } finally {
             setIsLoading(false);
-            navigate("/home");
-        }, 1000);
+        }
     };
 
     const togglePasswordVisibility = () => {

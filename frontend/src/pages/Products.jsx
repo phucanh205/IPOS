@@ -197,13 +197,13 @@ function Products() {
 
     return (
         <>
-            <div className="flex h-screen bg-gray-50">
+            <div className="flex h-screen bg-gray-100">
                 <Sidebar />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Top Bar */}
+                    {/* Search and Filter Bar */}
                     <div className="bg-white border-b border-gray-200 px-6 py-4">
                         <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1 flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <SearchBar onSearch={handleSearch} />
                                 <CategoryFilters
                                     categories={categories}
@@ -217,74 +217,74 @@ function Products() {
 
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                            {/* Add new food card */}
-                            <button
-                                type="button"
-                                onClick={handleOpenNew}
-                                className="flex flex-col items-center justify-center bg-white rounded-3xl shadow-sm border border-dashed border-gray-300 hover:border-blue-400 hover:shadow-md transition-all py-6"
-                            >
-                                <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center text-4xl mb-3">
-                                    +
-                                </div>
-                                <div className="text-gray-700 text-sm font-medium">
-                                    Thêm món ăn mới
-                                </div>
-                            </button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        {/* Add new food card */}
+                        <button
+                            type="button"
+                            onClick={handleOpenNew}
+                            className="flex flex-col items-center justify-center bg-white rounded-lg shadow-sm border border-dashed border-gray-300 hover:border-blue-400 hover:shadow-md transition-all py-6"
+                        >
+                            <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center text-4xl mb-3">
+                                +
+                            </div>
+                            <div className="text-gray-700 text-sm font-medium">
+                                Thêm món ăn mới
+                            </div>
+                        </button>
 
-                            {/* Product cards */}
-                            {loading ? (
-                                <div className="col-span-full flex items-center justify-center py-16 text-gray-400">
-                                    Đang tải sản phẩm...
-                                </div>
-                            ) : filteredProducts.length === 0 ? (
-                                <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-400 text-sm">
-                                    Không có sản phẩm nào
-                                </div>
-                            ) : (
-                                filteredProducts.map((product) => (
-                                    <button
-                                        key={product.id || product._id}
-                                        type="button"
-                                        onClick={() =>
-                                            handleOpenDetail(product)
-                                        }
-                                        className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
-                                    >
-                                        <div className="aspect-[4/3] bg-gray-100">
-                                            <img
-                                                src={
-                                                    product.image ||
-                                                    "https://via.placeholder.com/200"
-                                                }
-                                                alt={product.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.target.src =
-                                                        "https://via.placeholder.com/200";
-                                                }}
-                                            />
+                        {/* Product cards */}
+                        {loading ? (
+                            <div className="col-span-full flex items-center justify-center py-16 text-gray-400">
+                                Đang tải sản phẩm...
+                            </div>
+                        ) : filteredProducts.length === 0 ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-400 text-sm">
+                                Không có sản phẩm nào
+                            </div>
+                        ) : (
+                            filteredProducts.map((product) => (
+                                <button
+                                    key={product.id || product._id}
+                                    type="button"
+                                    onClick={() =>
+                                        handleOpenDetail(product)
+                                    }
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
+                                >
+                                    <div className="aspect-[4/3] bg-gray-100">
+                                        <img
+                                            src={
+                                                product.image ||
+                                                "https://via.placeholder.com/200"
+                                            }
+                                            alt={product.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.src =
+                                                    "https://via.placeholder.com/200";
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="px-3 py-3">
+                                        <div className="text-xs text-gray-500 mb-1">
+                                            {product.category?.name ||
+                                                product.categoryName ||
+                                                ""}
                                         </div>
-                                        <div className="px-3 py-3">
-                                            <div className="text-xs text-gray-500 mb-1">
-                                                {product.category?.name ||
-                                                    product.categoryName ||
-                                                    ""}
-                                            </div>
-                                            <div className="text-sm font-semibold text-gray-800 truncate">
-                                                {product.name}
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                {new Intl.NumberFormat(
-                                                    "vi-VN"
-                                                ).format(product.price)}{" "}
-                                                VND
-                                            </div>
+                                        <div className="text-sm font-semibold text-gray-800 truncate">
+                                            {product.name}
                                         </div>
-                                    </button>
-                                ))
-                            )}
-                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {new Intl.NumberFormat(
+                                                "vi-VN"
+                                            ).format(product.price)}{" "}
+                                            VND
+                                        </div>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </div>
                     </div>
                 </div>
             </div>

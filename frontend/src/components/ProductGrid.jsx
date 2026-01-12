@@ -14,7 +14,7 @@ function ProductGrid({ products, loading, onProductClick }) {
                     Không tìm thấy sản phẩm
                 </div>
                 <div className="text-gray-400 text-sm">
-                    Vui lòng kiểm tra kết nối backend hoặc chạy seed script
+                    Vui lòng kiểm tra kết nối backend hoặc thử lại sau.
                 </div>
             </div>
         );
@@ -25,13 +25,13 @@ function ProductGrid({ products, loading, onProductClick }) {
     };
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 content-start">
             {products.map((product) => (
                 <button
                     type="button"
                     key={product._id}
                     onClick={() => onProductClick(product)}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow text-left"
+                    className="group bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left"
                 >
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         <img
@@ -47,12 +47,12 @@ function ProductGrid({ products, loading, onProductClick }) {
                             }}
                         />
                     </div>
-                    <div className="p-4">
-                        <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
+                    <div className="p-3">
+                        <div className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.25rem]">
                             {product.name}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-gray-900">
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-gray-900">
                                 {formatPrice(product.price)}
                             </span>
                             <button
@@ -61,9 +61,10 @@ function ProductGrid({ products, loading, onProductClick }) {
                                     e.stopPropagation();
                                     onProductClick(product);
                                 }}
-                                className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+                                className="h-8 w-8 rounded-full border border-gray-200 bg-white text-gray-900 flex items-center justify-center group-hover:border-gray-300 group-hover:bg-white transition-colors"
+                                title="Thêm vào giỏ"
                             >
-                                <span className="text-xl font-bold">+</span>
+                                <span className="text-base leading-none">+</span>
                             </button>
                         </div>
                     </div>

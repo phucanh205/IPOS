@@ -68,7 +68,7 @@ function Dashboard() {
 
     if (loading) {
         return (
-            <div className="flex h-screen bg-gray-50">
+            <div className="flex h-screen bg-gray-100">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="text-gray-500">Đang tải...</div>
@@ -79,7 +79,7 @@ function Dashboard() {
 
     if (!stats) {
         return (
-            <div className="flex h-screen bg-gray-50">
+            <div className="flex h-screen bg-gray-100">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="text-gray-500">Không có dữ liệu</div>
@@ -89,13 +89,13 @@ function Dashboard() {
     }
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-gray-100">
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="bg-white border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center justify-between gap-4">
-                        <h1 className="text-2xl font-semibold text-gray-900">
+                        <h1 className="text-xl font-semibold text-gray-900">
                             Tổng quan
                         </h1>
                         <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ function Dashboard() {
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         {/* Doanh thu */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-semibold text-gray-600">
                                     Doanh thu
@@ -147,7 +147,7 @@ function Dashboard() {
                         </div>
 
                         {/* Đơn hàng */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-semibold text-gray-600">
                                     Đơn hàng
@@ -174,7 +174,7 @@ function Dashboard() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         {/* Doanh thu theo giờ */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800">
                                     Doanh thu theo giờ
@@ -200,7 +200,7 @@ function Dashboard() {
                         </div>
 
                         {/* Món bán chạy */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800">
                                     Món bán chạy
@@ -257,7 +257,7 @@ function Dashboard() {
                     </div>
 
                     {/* Recent Orders Table */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-semibold text-gray-800">
                                 Đơn hàng gần đây

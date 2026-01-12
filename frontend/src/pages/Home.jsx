@@ -377,13 +377,13 @@ function Home() {
 
     return (
         <>
-            <div className="flex h-screen bg-gray-50">
+            <div className="flex h-screen bg-gray-100">
                 <Sidebar />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Top Bar */}
+                    {/* Search and Filter Bar */}
                     <div className="bg-white border-b border-gray-200 px-6 py-4">
                         <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1 flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <SearchBar onSearch={handleSearch} />
                                 <CategoryFilters
                                     categories={categories}
@@ -397,14 +397,16 @@ function Home() {
 
                     {/* Main Content with Order Panel */}
                     <div className="flex-1 overflow-hidden flex">
-                        <div className="flex-1 overflow-y-auto p-6">
-                            <ProductGrid
-                                products={products}
-                                loading={loading}
-                                onProductClick={handleAddProduct}
-                            />
+                        <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
+                            <div className="max-w-[1100px]">
+                                <ProductGrid
+                                    products={products}
+                                    loading={loading}
+                                    onProductClick={handleAddProduct}
+                                />
+                            </div>
                         </div>
-                        <div className="hidden lg:block h-full">
+                        <div className="hidden lg:block h-full w-[460px] bg-gray-50 p-6 border-l border-gray-200">
                             <OrderPanel
                                 items={orderItems}
                                 onItemClick={handleOpenEdit}

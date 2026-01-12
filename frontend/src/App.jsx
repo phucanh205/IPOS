@@ -16,7 +16,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
     const location = useLocation();
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, user } = useAuth();
+
+    const getDefaultPath = () => {
+        if (user?.role === "cashier") return "/home";
+        if (user?.role === "admin") return "/dashboard";
+        if (user?.role === "kitchen") return "/home";
+        return "/home";
+    };
 
     // If loading auth, show loading screen
     if (isLoading) {
@@ -29,7 +36,7 @@ function AppRoutes() {
 
     // If authenticated and on login page, redirect to dashboard
     if (isAuthenticated && location.pathname === "/login") {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to={getDefaultPath()} replace />;
     }
 
     return (
@@ -38,7 +45,7 @@ function AppRoutes() {
             <Route
                 path="/dashboard"
                 element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/home">
                         <Dashboard />
                     </ProtectedRoute>
                 }
@@ -79,7 +86,7 @@ function AppRoutes() {
                 path="/"
                 element={
                     <Navigate
-                        to={isAuthenticated ? "/dashboard" : "/login"}
+                        to={isAuthenticated ? getDefaultPath() : "/login"}
                         replace
                     />
                 }

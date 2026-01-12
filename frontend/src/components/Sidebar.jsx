@@ -4,13 +4,14 @@ import { useAuth } from "../contexts/AuthContext";
 function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
 
     const menuItems = [
         {
             icon: "📊",
             label: "Tổng quan",
             path: "/dashboard",
+            roles: ["admin"],
         },
         {
             icon: "▦",
@@ -19,20 +20,25 @@ function Sidebar() {
         },
         {
             icon: "🍔",
-            label: "Sản phẩm",
+            label: "Danh sách sản phẩm",
             path: "/products",
         },
         {
             icon: "💰",
-            label: "Đơn tạm giữ",
+            label: "Đơn hàng tạm giữ",
             path: "/held-orders",
         },
         {
             icon: "🧾",
-            label: "Đơn hàng",
+            label: "Lịch sử hóa đơn",
             path: "/orders",
         },
     ];
+
+    const visibleMenuItems = menuItems.filter((item) => {
+        if (!item.roles) return true;
+        return item.roles.includes(user?.role);
+    });
 
     const handleLogout = () => {
         logout();
@@ -40,38 +46,43 @@ function Sidebar() {
     };
 
     return (
-        <div className="w-20 bg-blue-50 flex flex-col items-center py-6 border-r border-gray-200">
-            <div className="text-lg font-semibold text-gray-700 mb-8">Menu</div>
+        <div className="w-64 bg-gray-900 flex flex-col h-full">
+            {/* Logo */}
+            <div className="p-6 border-b border-gray-800">
+                <div className="text-xl font-bold text-white">IPOS</div>
+            </div>
 
-            <div className="flex flex-col gap-6">
-                {menuItems.map((item) => {
+            {/* Menu Items */}
+            <div className="flex-1 py-4">
+                {visibleMenuItems.map((item) => {
                     const isActive = location.pathname.startsWith(item.path);
                     return (
                         <button
                             key={item.path}
                             type="button"
                             onClick={() => navigate(item.path)}
-                            className={`w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
+                            className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${
                                 isActive
-                                    ? "bg-blue-500 text-white shadow-md"
-                                    : "text-gray-600 hover:bg-blue-100"
+                                    ? "bg-blue-600 text-white border-l-4 border-blue-400"
+                                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
                             }`}
-                            title={item.label}
                         >
-                            <span className="text-2xl">{item.icon}</span>
+                            <span className="text-lg">{item.icon}</span>
+                            <span className="font-medium">{item.label}</span>
                         </button>
                     );
                 })}
             </div>
 
-            <div className="mt-auto">
+            {/* Logout */}
+            <div className="p-4 border-t border-gray-800">
                 <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer text-gray-600 hover:bg-blue-100 transition-all"
-                    title="Đăng xuất"
+                    className="w-full flex items-center gap-3 px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-all rounded-lg"
                 >
-                    <span className="text-2xl">←</span>
+                    <span className="text-lg">←</span>
+                    <span className="font-medium">Đăng xuất</span>
                 </button>
             </div>
         </div>
