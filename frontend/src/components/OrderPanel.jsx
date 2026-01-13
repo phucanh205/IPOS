@@ -13,6 +13,7 @@ function OrderPanel({
     orderType = "Dine in",
     onOrderTypeChange,
     tableNumber = "Bàn 4",
+    onTableNumberChange,
     paymentMethod = "Cash",
     onPaymentMethodChange,
 }) {
@@ -22,6 +23,7 @@ function OrderPanel({
     });
 
     const isCartEmpty = items.length === 0;
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const tax = Math.round(subtotal * 0.1); // 10% tax như trong hình
@@ -94,20 +96,51 @@ function OrderPanel({
     return (
         <div className="w-full h-full flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl ring-2 ring-gray-300 border-2 border-gray-200">
             {/* Header */}
-            <div className="px-6 pt-6 pb-4 border-b border-gray-200 flex items-center justify-between">
-                <div>
-                    <div className="text-sm text-gray-400">{tableNumber}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                        {items.length} món
+            <div className="px-6 pt-6 pb-4 border-b border-gray-200">
+                {/* Table Selection - chỉ hiển thị khi orderType là "Dine in" */}
+                {orderType === "Dine in" ? (
+                    <div className="flex items-center justify-between mb-3">
+                        <select
+                            value={tableNumber}
+                            onChange={(e) => onTableNumberChange?.(e.target.value)}
+                            className="text-sm text-gray-900 bg-transparent border-none focus:outline-none cursor-pointer font-medium"
+                        >
+                            <option value="Bàn 1">Bàn 1</option>
+                            <option value="Bàn 2">Bàn 2</option>
+                            <option value="Bàn 3">Bàn 3</option>
+                            <option value="Bàn 4">Bàn 4</option>
+                            <option value="Bàn 5">Bàn 5</option>
+                            <option value="Bàn 6">Bàn 6</option>
+                            <option value="Bàn 7">Bàn 7</option>
+                            <option value="Bàn 8">Bàn 8</option>
+                            <option value="Bàn 9">Bàn 9</option>
+                            <option value="Bàn 10">Bàn 10</option>
+                        </select>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 text-xl transition-colors"
+                            title="Đóng và hủy order"
+                        >
+                            ×
+                        </button>
                     </div>
+                ) : (
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm text-gray-900 font-medium">
+                            {orderType === "Take away" ? "Mang đi" : "Giao hàng"}
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 text-xl transition-colors"
+                            title="Đóng và hủy order"
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
+                <div className="text-xs text-gray-900">
+                    {totalItems} món
                 </div>
-                <button
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 text-xl transition-colors"
-                    title="Đóng và hủy order"
-                >
-                    ×
-                </button>
             </div>
 
             {/* Order Type */}

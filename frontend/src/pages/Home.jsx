@@ -429,6 +429,7 @@ function Home() {
                                 orderType={orderType}
                                 onOrderTypeChange={setOrderType}
                                 tableNumber={tableNumber}
+                                onTableNumberChange={setTableNumber}
                                 paymentMethod={paymentMethod}
                                 onPaymentMethodChange={setPaymentMethod}
                             />
@@ -449,6 +450,7 @@ function Home() {
                                     orderType={orderType}
                                     onOrderTypeChange={setOrderType}
                                     tableNumber={tableNumber}
+                                    onTableNumberChange={setTableNumber}
                                     paymentMethod={paymentMethod}
                                     onPaymentMethodChange={setPaymentMethod}
                                 />
