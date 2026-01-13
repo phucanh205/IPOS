@@ -49,7 +49,8 @@ function Kitchen() {
     }, []);
 
     useEffect(() => {
-        const socket = io({
+        const socketUrl = import.meta.env.DEV ? "http://localhost:5000" : undefined;
+        const socket = io(socketUrl, {
             path: "/socket.io",
             transports: ["polling", "websocket"],
             reconnection: true,
@@ -144,6 +145,7 @@ function Kitchen() {
     const newOrders = groupOrders(orders, ["new"]);
     const cookingOrders = groupOrders(orders, ["accepted", "cooking"]);
     const doneOrders = groupOrders(orders, ["completed"]);
+    const rejectedOrders = groupOrders(orders, ["rejected"]);
 
     const renderItemsSummary = (order) => {
         const items = Array.isArray(order.items) ? order.items : [];
@@ -152,6 +154,16 @@ function Kitchen() {
                 <span className="font-medium">{it.quantity}x</span> {it.productName}
             </div>
         ));
+    };
+
+    const renderRejectedReason = (order) => {
+        const reason = (order?.kitchenRejectionReason || "").trim();
+        if (!reason) return null;
+        return (
+            <div className="mt-2 text-xs text-gray-600 line-clamp-2">
+                <span className="font-medium">Lý do:</span> {reason}
+            </div>
+        );
     };
 
     const headerLabel = (order) => {
@@ -203,6 +215,7 @@ function Kitchen() {
                                             {headerLabel(order)}
                                         </div>
                                         <div className="mt-1">{renderItemsSummary(order)}</div>
+                                        {statusKey === "rejected" && renderRejectedReason(order)}
                                     </div>
 
                                     <div className="text-xs text-gray-400 whitespace-nowrap">
@@ -255,6 +268,10 @@ function Kitchen() {
                                             </button>
                                         </>
                                     )}
+
+                                    {statusKey === "rejected" && (
+                                        <div className="text-xs text-gray-400">Đã hủy</div>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -276,7 +293,7 @@ function Kitchen() {
                 </div>
 
                 <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-5">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         <div className="rounded-xl border border-gray-200 p-4">
                             <div className="flex items-center gap-2">
                                 <div className="text-xl font-bold text-blue-600">{newOrders.length}</div>
@@ -304,6 +321,15 @@ function Kitchen() {
                             </div>
                             <div className="text-xs text-gray-500 mt-1">Đã xong, chờ phục vụ</div>
                         </div>
+                        <div className="rounded-xl border border-gray-200 p-4">
+                            <div className="flex items-center gap-2">
+                                <div className="text-xl font-bold text-indigo-600">{rejectedOrders.length}</div>
+                                <div className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    Hủy đơn
+                                </div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Số lượng hủy đơn</div>
+                        </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
@@ -322,7 +348,7 @@ function Kitchen() {
                     </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-6">
+                <div className="mt-6 grid grid-cols-4 gap-6">
                     <Column
                         title="Đơn mới"
                         badge={newOrders.length}
@@ -343,6 +369,13 @@ function Kitchen() {
                         subtitle=""
                         orders={doneOrders}
                         statusKey="done"
+                    />
+                    <Column
+                        title="Hủy đơn"
+                        badge={rejectedOrders.length}
+                        subtitle=""
+                        orders={rejectedOrders}
+                        statusKey="rejected"
                     />
                 </div>
 
