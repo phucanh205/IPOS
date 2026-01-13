@@ -67,8 +67,7 @@ productSchema.pre("save", async function (next) {
 });
 
 // Indexes
-productSchema.index({ productID: 1 });
-productSchema.index({ name: 1 });
+
 
 const Product = mongoose.model('Product', productSchema);
 

@@ -12,7 +12,7 @@ function OrderPanel({
     onPlaceOrder,
     orderType = "Dine in",
     onOrderTypeChange,
-    tableNumber = "Bàn 4",
+    tableNumber = "Bàn 1",
     onTableNumberChange,
     paymentMethod = "Cash",
     onPaymentMethodChange,

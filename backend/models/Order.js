@@ -155,7 +155,6 @@ orderSchema.pre("save", async function (next) {
 });
 
 // Indexes for better query performance
-orderSchema.index({ orderID: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ kitchenStatus: 1, sentToKitchenAt: -1 });
 orderSchema.index({ orderNumber: 1 });

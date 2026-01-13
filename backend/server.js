@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import http from "http";
+import { initSocket } from "./socket.js";
 import productRoutes from "./routes/products.js";
 import categoryRoutes from "./routes/categories.js";
 import uploadRoutes from "./routes/upload.js";
@@ -11,6 +13,8 @@ import heldOrderRoutes from "./routes/heldOrders.js";
 import orderRoutes from "./routes/orders.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import authRoutes from "./routes/auth.js";
+import kitchenRoutes from "./routes/kitchen.js";
+import { authenticateAndCheckRole } from "./middleware/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +23,9 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+const httpServer = http.createServer(app);
+initSocket(httpServer);
 
 // Middleware
 app.use(cors());
@@ -35,6 +42,11 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/held-orders", heldOrderRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use(
+    "/api/kitchen",
+    ...authenticateAndCheckRole("kitchen"),
+    kitchenRoutes
+);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -46,7 +58,7 @@ mongoose
     .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/pos_system")
     .then(() => {
         console.log("✅ Connected to MongoDB");
-        app.listen(PORT, () => {
+        httpServer.listen(PORT, () => {
             console.log(`Server đang chạy trên http://localhost:${PORT}`);
         });
     })
@@ -55,4 +67,5 @@ mongoose
         process.exit(1);
     });
 
+export { app, httpServer };
 export default app;

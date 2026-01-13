@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = "/api";
+const STORAGE_KEY = "pos_auth";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -8,6 +9,26 @@ const api = axios.create({
         "Content-Type": "application/json",
     },
 });
+
+api.interceptors.request.use(
+    (config) => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const auth = JSON.parse(raw);
+                const token = auth?.token;
+                if (token) {
+                    config.headers = config.headers || {};
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            }
+        } catch (e) {
+            // ignore storage parse errors
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
 export const loginUser = async (username, password) => {
     const response = await api.post("/auth/login", { username, password });

@@ -99,7 +99,6 @@ heldOrderSchema.pre("save", async function (next) {
 });
 
 // Indexes
-heldOrderSchema.index({ heldOrderID: 1 });
 heldOrderSchema.index({ orderNumber: 1 });
 heldOrderSchema.index({ heldAt: -1 });
 

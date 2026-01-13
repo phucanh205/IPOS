@@ -1,5 +1,6 @@
 import express from "express";
 import Order from "../models/Order.js";
+import { getIO } from "../socket.js";
 
 const router = express.Router();
 
@@ -127,6 +128,13 @@ router.post("/", async (req, res) => {
             "items.productId",
             "name image"
         );
+
+        try {
+            const io = getIO();
+            io.to("kitchen").emit("new-order", populatedOrder);
+        } catch (e) {
+            // ignore if socket not initialized
+        }
 
         res.status(201).json(populatedOrder);
     } catch (error) {

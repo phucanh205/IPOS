@@ -15,7 +15,7 @@ function Login() {
     const getRedirectPath = (role) => {
         if (role === "cashier") return "/home";
         if (role === "admin") return "/dashboard";
-        if (role === "kitchen") return "/home";
+        if (role === "kitchen") return "/kitchen";
         return "/home";
     };
 

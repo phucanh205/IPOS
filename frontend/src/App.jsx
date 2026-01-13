@@ -12,6 +12,7 @@ import Products from "./pages/Products";
 import HeldOrders from "./pages/HeldOrders";
 import Orders from "./pages/Orders";
 import Dashboard from "./pages/Dashboard";
+import Kitchen from "./pages/Kitchen";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
@@ -21,7 +22,7 @@ function AppRoutes() {
     const getDefaultPath = () => {
         if (user?.role === "cashier") return "/home";
         if (user?.role === "admin") return "/dashboard";
-        if (user?.role === "kitchen") return "/home";
+        if (user?.role === "kitchen") return "/kitchen";
         return "/home";
     };
 
@@ -79,6 +80,17 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <Orders />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/kitchen"
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["kitchen"]}
+                        redirectTo="/home"
+                    >
+                        <Kitchen />
                     </ProtectedRoute>
                 }
             />
