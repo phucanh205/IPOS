@@ -11,6 +11,7 @@ function Kitchen() {
         reason: "out_of_stock",
         note: "",
     });
+    const [detailModal, setDetailModal] = useState({ open: false, order: null });
     const socketRef = useRef(null);
 
     const nowText = useMemo(() => {
@@ -126,6 +127,14 @@ function Kitchen() {
         });
     };
 
+    const openDetailModal = (order) => {
+        setDetailModal({ open: true, order });
+    };
+
+    const closeDetailModal = () => {
+        setDetailModal({ open: false, order: null });
+    };
+
     const confirmCancel = async () => {
         const order = cancelModal.order;
         if (!order?._id) return;
@@ -149,11 +158,28 @@ function Kitchen() {
 
     const renderItemsSummary = (order) => {
         const items = Array.isArray(order.items) ? order.items : [];
-        return items.slice(0, 3).map((it, idx) => (
-            <div key={idx} className="text-xs text-gray-700">
-                <span className="font-medium">{it.quantity}x</span> {it.productName}
-            </div>
-        ));
+        return items.slice(0, 3).map((it, idx) => {
+            const optionParts = [];
+            if (it.sizeLabel && it.sizeLabel !== "Vừa") optionParts.push(it.sizeLabel);
+            if (Array.isArray(it.toppings) && it.toppings.length > 0) {
+                optionParts.push(it.toppings.join(", "));
+            }
+            if (it.notes) optionParts.push(it.notes);
+            const optionsText = optionParts.join(" • ");
+
+            return (
+                <div key={idx} className="text-xs text-gray-700">
+                    <div>
+                        <span className="font-medium">{it.quantity}x</span> {it.productName}
+                    </div>
+                    {optionsText && (
+                        <div className="mt-0.5 text-[11px] text-gray-500 line-clamp-2">
+                            {optionsText}
+                        </div>
+                    )}
+                </div>
+            );
+        });
     };
 
     const renderRejectedReason = (order) => {
@@ -164,6 +190,19 @@ function Kitchen() {
                 <span className="font-medium">Lý do:</span> {reason}
             </div>
         );
+    };
+
+    const formatTime = (order) => {
+        const value = order?.sentToKitchenAt || order?.createdAt;
+        if (!value) return "";
+        try {
+            return new Date(value).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        } catch {
+            return "";
+        }
     };
 
     const headerLabel = (order) => {
@@ -207,7 +246,8 @@ function Kitchen() {
                         list.map((order) => (
                             <div
                                 key={order._id}
-                                className="bg-white rounded-xl border border-gray-300 shadow-sm p-4"
+                                className="bg-white rounded-xl border border-gray-300 shadow-sm p-4 cursor-pointer hover:border-blue-300 transition-colors"
+                                onClick={() => openDetailModal(order)}
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
@@ -233,14 +273,20 @@ function Kitchen() {
                                         <>
                                             <button
                                                 type="button"
-                                                onClick={() => openCancelModal(order)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openCancelModal(order);
+                                                }}
                                                 className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                                             >
                                                 Từ chối
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => updateKitchenStatus(order._id, "accepted")}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    updateKitchenStatus(order._id, "accepted");
+                                                }}
                                                 className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700"
                                             >
                                                 Nhận chế biến
@@ -252,16 +298,20 @@ function Kitchen() {
                                         <>
                                             <button
                                                 type="button"
-                                                onClick={() => openCancelModal(order)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openCancelModal(order);
+                                                }}
                                                 className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                                             >
                                                 Hủy
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() =>
-                                                    updateKitchenStatus(order._id, "completed")
-                                                }
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    updateKitchenStatus(order._id, "completed");
+                                                }}
                                                 className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700"
                                             >
                                                 Đánh dấu hoàn tất
@@ -494,6 +544,98 @@ function Kitchen() {
                                 className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 font-semibold"
                             >
                                 Xác nhận hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {detailModal.open && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                    onClick={closeDetailModal}
+                >
+                    <div
+                        className="bg-white rounded-2xl w-full max-w-lg mx-4 shadow-xl border border-gray-200 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="text-sm text-gray-500">Chi tiết đơn hàng</div>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="text-center text-xl font-semibold text-gray-900">
+                                {detailModal.order?.orderNumber} - {detailModal.order?.tableNumber}
+                            </div>
+
+                            <div className="mt-4 rounded-2xl bg-slate-100 p-5">
+                                {Array.isArray(detailModal.order?.items) &&
+                                    detailModal.order.items.map((it, idx) => {
+                                        const showSize = it?.sizeLabel && it.sizeLabel !== "Vừa";
+                                        const toppings = Array.isArray(it?.toppings) ? it.toppings : [];
+                                        const notes = (it?.notes || "").trim();
+
+                                        return (
+                                            <div
+                                                key={`${it?.productId || it?.productName || "item"}-${idx}`}
+                                                className={idx === 0 ? "" : "mt-4"}
+                                            >
+                                                <div className="grid grid-cols-[80px_12px_1fr] gap-x-3 gap-y-2 text-sm">
+                                                    <div className="text-gray-600">Món</div>
+                                                    <div className="text-gray-600">:</div>
+                                                    <div className="text-gray-900 font-medium">
+                                                        {it?.quantity}x {it?.productName}
+                                                    </div>
+
+                                                    {showSize && (
+                                                        <>
+                                                            <div className="text-gray-600">Size</div>
+                                                            <div className="text-gray-600">:</div>
+                                                            <div className="text-gray-900">{it.sizeLabel}</div>
+                                                        </>
+                                                    )}
+
+                                                    {toppings.length > 0 && (
+                                                        <>
+                                                            <div className="text-gray-600">Topping thêm</div>
+                                                            <div className="text-gray-600">:</div>
+                                                            <div className="text-gray-900">
+                                                                {toppings.map((t, tIdx) => (
+                                                                    <div key={`${t}-${tIdx}`}>{t}</div>
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    {notes && (
+                                                        <>
+                                                            <div className="text-gray-600">Note</div>
+                                                            <div className="text-gray-600">:</div>
+                                                            <div className="text-gray-900">{notes}</div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                <div className="mt-5 grid grid-cols-[80px_12px_1fr] gap-x-3 text-sm">
+                                    <div className="text-gray-600">Thời gian</div>
+                                    <div className="text-gray-600">:</div>
+                                    <div className="text-gray-900 font-semibold">
+                                        {formatTime(detailModal.order)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-6 pb-6">
+                            <button
+                                type="button"
+                                onClick={closeDetailModal}
+                                className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                            >
+                                Đã hiểu
                             </button>
                         </div>
                     </div>
