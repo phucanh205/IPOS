@@ -61,10 +61,22 @@ function ProductGrid({ products, loading, onProductClick }) {
                                     e.stopPropagation();
                                     onProductClick(product);
                                 }}
-                                className="h-8 w-8 rounded-full border border-gray-200 bg-white text-gray-900 flex items-center justify-center group-hover:border-gray-300 group-hover:bg-white transition-colors"
+                                className="h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-900 inline-flex items-center justify-center transition-colors"
                                 title="Thêm vào giỏ"
                             >
-                                <span className="text-base leading-none">+</span>
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-4 h-4"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M12 5v14" />
+                                    <path d="M5 12h14" />
+                                </svg>
                             </button>
                         </div>
                     </div>

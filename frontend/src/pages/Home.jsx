@@ -254,6 +254,16 @@ function Home() {
     };
 
     const handleSaveItem = (updatedItem) => {
+        if (!updatedItem?.id) {
+            const newItem = {
+                ...updatedItem,
+                id: Date.now().toString() + Math.random().toString(16),
+            };
+            setOrderItems((prev) => [...prev, newItem]);
+            setIsModalOpen(false);
+            return;
+        }
+
         setOrderItems((prev) =>
             prev.map((item) =>
                 item.id === updatedItem.id ? updatedItem : item

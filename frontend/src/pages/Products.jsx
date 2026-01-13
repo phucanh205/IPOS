@@ -249,7 +249,7 @@ function Products() {
                                     onClick={() =>
                                         handleOpenDetail(product)
                                     }
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
+                                    className="bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left"
                                 >
                                     <div className="aspect-[4/3] bg-gray-100">
                                         <img
