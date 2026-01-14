@@ -3,6 +3,13 @@ import Order from "../models/Order.js";
 
 const router = express.Router();
 
+const toYmd = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
+
 // Get dashboard statistics
 router.get("/stats", async (req, res) => {
     try {
@@ -98,6 +105,85 @@ router.get("/stats", async (req, res) => {
             .limit(6)
             .select("orderNumber createdAt orderType tableNumber paymentMethod total");
 
+        const baseDate = date ? new Date(date) : new Date();
+        baseDate.setHours(0, 0, 0, 0);
+        const rangeStart = new Date(baseDate);
+        rangeStart.setDate(rangeStart.getDate() - 6);
+        const rangeEnd = new Date(baseDate);
+        rangeEnd.setHours(23, 59, 59, 999);
+
+        const prevRangeStart = new Date(rangeStart);
+        prevRangeStart.setDate(prevRangeStart.getDate() - 7);
+        const prevRangeEnd = new Date(rangeStart);
+        prevRangeEnd.setMilliseconds(-1);
+
+        const dailyAgg = await Order.aggregate([
+            {
+                $match: {
+                    status: "completed",
+                    createdAt: { $gte: rangeStart, $lte: rangeEnd },
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        y: { $year: "$createdAt" },
+                        m: { $month: "$createdAt" },
+                        d: { $dayOfMonth: "$createdAt" },
+                    },
+                    revenue: { $sum: { $ifNull: ["$total", 0] } },
+                    orders: { $sum: 1 },
+                },
+            },
+            {
+                $sort: {
+                    "_id.y": 1,
+                    "_id.m": 1,
+                    "_id.d": 1,
+                },
+            },
+        ]);
+
+        const dailyMap = new Map();
+        dailyAgg.forEach((row) => {
+            const y = row?._id?.y;
+            const m = row?._id?.m;
+            const d = row?._id?.d;
+            if (!y || !m || !d) return;
+            const key = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            dailyMap.set(key, {
+                date: key,
+                revenue: row.revenue || 0,
+                orders: row.orders || 0,
+            });
+        });
+
+        const dailyRevenue = [];
+        for (let i = 0; i < 7; i++) {
+            const dt = new Date(rangeStart);
+            dt.setDate(rangeStart.getDate() + i);
+            const key = toYmd(dt);
+            dailyRevenue.push(dailyMap.get(key) || { date: key, revenue: 0, orders: 0 });
+        }
+
+        const prev7Agg = await Order.aggregate([
+            {
+                $match: {
+                    status: "completed",
+                    createdAt: { $gte: prevRangeStart, $lte: prevRangeEnd },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    revenue: { $sum: { $ifNull: ["$total", 0] } },
+                    orders: { $sum: 1 },
+                },
+            },
+        ]);
+
+        const prev7Total = prev7Agg?.[0]?.revenue || 0;
+
         res.json({
             revenue: {
                 today: todayRevenue,
@@ -111,6 +197,8 @@ router.get("/stats", async (req, res) => {
             },
             bestSellingItems,
             recentOrders,
+            dailyRevenue,
+            prev7Total,
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -118,4 +206,3 @@ router.get("/stats", async (req, res) => {
 });
 
 export default router;
-

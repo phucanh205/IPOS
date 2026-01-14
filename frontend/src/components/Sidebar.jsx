@@ -17,21 +17,25 @@ function Sidebar() {
             icon: "▦",
             label: "POS",
             path: "/home",
+            roles: ["cashier"],
         },
         {
             icon: "🍔",
             label: "Danh sách sản phẩm",
             path: "/products",
+            roles: ["admin", "cashier"],
         },
         {
             icon: "💰",
             label: "Đơn hàng tạm giữ",
             path: "/held-orders",
+            roles: ["cashier"],
         },
         {
             icon: "🧾",
             label: "Lịch sử hóa đơn",
             path: "/orders",
+            roles: ["admin", "cashier"],
         },
     ];
 
@@ -49,7 +53,9 @@ function Sidebar() {
         <div className="w-64 bg-gray-900 flex flex-col h-full">
             {/* Logo */}
             <div className="p-6 border-b border-gray-800">
-                <div className="text-xl font-bold text-white">IPOS</div>
+                <div className="text-xl font-bold text-white">
+                    {user?.role === "admin" ? "IPOS ADMIN" : "IPOS"}
+                </div>
             </div>
 
             {/* Menu Items */}

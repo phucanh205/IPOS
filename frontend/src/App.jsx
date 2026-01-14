@@ -46,7 +46,7 @@ function AppRoutes() {
             <Route
                 path="/dashboard"
                 element={
-                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/home">
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/dashboard">
                         <Dashboard />
                     </ProtectedRoute>
                 }
@@ -88,7 +88,7 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["kitchen"]}
-                        redirectTo="/home"
+                        redirectTo="/kitchen"
                     >
                         <Kitchen />
                     </ProtectedRoute>

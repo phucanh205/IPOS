@@ -81,7 +81,6 @@ function Login() {
                                     required
                                     disabled={isLoading}
                                 />
-                                <span className="eye-icon">👁️</span>
                             </div>
                         </div>
 

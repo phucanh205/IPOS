@@ -39,6 +39,74 @@ function Dashboard() {
             .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
     };
 
+    const formatDayMonth = (ymd) => {
+        if (!ymd) return "";
+        const parts = String(ymd).split("-");
+        if (parts.length !== 3) return ymd;
+        const d = Number(parts[2]);
+        const m = Number(parts[1]);
+        if (!d || !m) return ymd;
+        return `${d}/${m}`;
+    };
+
+    const buildRevenue7dWidget = (dailyRevenueRaw, selectedYmd, prev7TotalRaw) => {
+        const days = Array.isArray(dailyRevenueRaw)
+            ? dailyRevenueRaw
+                  .map((d) => ({
+                      date: d?.date,
+                      revenue: Number(d?.revenue || 0),
+                      orders: Number(d?.orders || 0),
+                  }))
+                  .filter((d) => Boolean(d.date))
+            : [];
+
+        const total7 = days.reduce((sum, d) => sum + d.revenue, 0);
+        const prev7Total = Number(prev7TotalRaw || 0);
+        const comparePct = prev7Total > 0 ? ((total7 - prev7Total) / prev7Total) * 100 : total7 > 0 ? 100 : 0;
+
+        const maxRevenue = Math.max(0, ...days.map((d) => d.revenue));
+        const maxDate = days.find((d) => d.revenue === maxRevenue)?.date;
+        const allZero = days.length === 0 || days.every((d) => d.revenue === 0);
+
+        const rows = days.map((d, idx) => {
+            const prev = idx > 0 ? days[idx - 1].revenue : null;
+            let dayChangePct = null;
+            if (prev !== null) {
+                dayChangePct = prev > 0 ? ((d.revenue - prev) / prev) * 100 : d.revenue > 0 ? 100 : 0;
+            }
+            return {
+                ...d,
+                dayChangePct,
+                isToday: selectedYmd && d.date === selectedYmd,
+                isMax: maxRevenue > 0 && d.date === maxDate,
+            };
+        });
+
+        return { rows, total7, prev7Total, comparePct, maxRevenue, allZero };
+    };
+
+    const formatCompare = (value) => {
+        if (value > 0) return `↑ +${value.toFixed(1)}%`;
+        if (value < 0) return `↓ ${value.toFixed(1)}%`;
+        return "—";
+    };
+
+    const formatCompactVnd = (value) => {
+        const v = Number(value || 0);
+        if (!isFinite(v)) return "0";
+        if (v === 0) return "0";
+        if (Math.abs(v) >= 1_000_000_000) {
+            return `${(v / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}tỷ`;
+        }
+        if (Math.abs(v) >= 1_000_000) {
+            return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, "")}tr`;
+        }
+        if (Math.abs(v) >= 1_000) {
+            return `${Math.round(v / 1_000)}k`;
+        }
+        return `${Math.round(v)}`;
+    };
+
     const getOrderTypeText = (orderType) => {
         const types = {
             "Dine in": "Tại bàn",
@@ -173,30 +241,122 @@ function Dashboard() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        {/* Doanh thu theo giờ */}
+                        {/* Doanh thu theo ngày */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-semibold text-gray-800">
-                                    Doanh thu theo giờ
+                                    Doanh thu theo ngày
                                 </h3>
                                 <button className="text-xs text-blue-600 hover:text-blue-700">
                                     Xem chi tiết
                                 </button>
                             </div>
-                            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center border border-dashed border-gray-300">
-                                <p className="text-sm text-gray-400">
-                                    Biểu đồ doanh thu theo giờ (placeholder)
-                                </p>
-                            </div>
-                            <div className="flex justify-between mt-4 text-xs text-gray-500">
-                                <span>8h</span>
-                                <span>10h</span>
-                                <span>12h</span>
-                                <span>14h</span>
-                                <span>16h</span>
-                                <span>18h</span>
-                                <span>20h</span>
-                            </div>
+                            {(() => {
+                                const widget = buildRevenue7dWidget(
+                                    stats.dailyRevenue,
+                                    selectedDate,
+                                    stats.prev7Total
+                                );
+
+                                return (
+                                    <>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                                <div className="text-xs text-gray-500">Tổng 7 ngày</div>
+                                                <div className="text-lg font-semibold text-gray-900">
+                                                    {formatPrice(widget.total7)}₫
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xs text-gray-500">So với 7 ngày trước</div>
+                                                <div
+                                                    className={`text-sm font-semibold ${
+                                                        widget.comparePct > 0
+                                                            ? "text-green-600"
+                                                            : widget.comparePct < 0
+                                                            ? "text-red-600"
+                                                            : "text-gray-500"
+                                                    }`}
+                                                >
+                                                    {formatCompare(widget.comparePct)}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {widget.allZero ? (
+                                            <div className="h-64 bg-gray-50 rounded-lg flex flex-col items-center justify-center border border-dashed border-gray-300 px-6">
+                                                <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xl">
+                                                    📉
+                                                </div>
+                                                <div className="mt-3 text-sm font-semibold text-gray-700">
+                                                    Chưa có dữ liệu doanh thu trong 7 ngày gần nhất
+                                                </div>
+                                                <div className="mt-1 text-xs text-gray-500 text-center">
+                                                    Khi có đơn hoàn thành, biểu đồ sẽ hiển thị xu hướng doanh thu theo ngày.
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="h-64 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                                    <div className="h-full grid grid-cols-7 gap-2 items-end">
+                                                        {(() => {
+                                                            const max = Math.max(1, widget.maxRevenue);
+                                                            return widget.rows.map((d) => {
+                                                                const pct = Math.max(0, Math.min(100, (d.revenue / max) * 100));
+                                                                const tooltipLines = [];
+                                                                tooltipLines.push(`Ngày: ${formatDayMonth(d.date)}`);
+                                                                if (d.orders > 0) {
+                                                                    tooltipLines.push(`Doanh thu: ${formatPrice(d.revenue)}₫`);
+                                                                } else {
+                                                                    tooltipLines.push("Không có đơn hàng");
+                                                                }
+                                                                if (d.dayChangePct !== null) {
+                                                                    tooltipLines.push(`So với hôm trước: ${formatCompare(d.dayChangePct)}`);
+                                                                }
+                                                                const tooltip = tooltipLines.join("\n");
+
+                                                                const barClass = d.isMax
+                                                                    ? "bg-blue-600"
+                                                                    : d.isToday
+                                                                    ? "bg-blue-600/90"
+                                                                    : "bg-blue-600/60";
+
+                                                                return (
+                                                                    <div
+                                                                        key={d.date}
+                                                                        className="h-full flex flex-col justify-end"
+                                                                    >
+                                                                        <div className="mb-1 text-[10px] leading-none text-gray-600 text-center select-none">
+                                                                            {formatCompactVnd(d.revenue)}
+                                                                        </div>
+                                                                        <div
+                                                                            className={`w-full rounded-md ${barClass} ${
+                                                                                d.isToday ? "ring-2 ring-amber-300" : ""
+                                                                            }`}
+                                                                            style={{
+                                                                                height: `${pct}%`,
+                                                                                minHeight: d.revenue > 0 ? 6 : 0,
+                                                                            }}
+                                                                            title={tooltip}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-7 gap-2 mt-3 text-xs text-gray-500">
+                                                    {widget.rows.map((d) => (
+                                                        <div key={`lbl-${d.date}`} className="text-center">
+                                                            {formatDayMonth(d.date)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Món bán chạy */}
