@@ -103,7 +103,7 @@ function Kitchen() {
 
     const getCancelReasonText = (key) => {
         if (key === "out_of_stock") return "Hết nguyên liệu";
-        if (key === "customer_cancel") return "Khách đòi ý / hủy món";
+        if (key === "customer_cancel") return "Không biết nấu";
         if (key === "input_mistake") return "Sai sót khi nhập đơn";
         if (key === "other") return "Lý do khác";
         return "";
