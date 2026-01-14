@@ -6,43 +6,51 @@ function Sidebar() {
     const navigate = useNavigate();
     const { logout, user } = useAuth();
 
-    const menuItems = [
+    const role = user?.role;
+    const isAdmin = role === "admin";
+
+    const adminMenuItems = [
         {
             icon: "📊",
             label: "Tổng quan",
             path: "/dashboard",
-            roles: ["admin"],
-        },
-        {
-            icon: "▦",
-            label: "POS",
-            path: "/home",
-            roles: ["cashier"],
         },
         {
             icon: "🍔",
             label: "Danh sách sản phẩm",
             path: "/products",
-            roles: ["admin", "cashier"],
-        },
-        {
-            icon: "💰",
-            label: "Đơn hàng tạm giữ",
-            path: "/held-orders",
-            roles: ["cashier"],
         },
         {
             icon: "🧾",
             label: "Lịch sử hóa đơn",
             path: "/orders",
-            roles: ["admin", "cashier"],
         },
     ];
 
-    const visibleMenuItems = menuItems.filter((item) => {
-        if (!item.roles) return true;
-        return item.roles.includes(user?.role);
-    });
+    const cashierMenuItems = [
+        {
+            icon: "▦",
+            label: "POS",
+            path: "/home",
+        },
+        {
+            icon: "🍔",
+            label: "Danh sách sản phẩm",
+            path: "/products",
+        },
+        {
+            icon: "💰",
+            label: "Đơn hàng tạm giữ",
+            path: "/held-orders",
+        },
+        {
+            icon: "🧾",
+            label: "Lịch sử hóa đơn",
+            path: "/orders",
+        },
+    ];
+
+    const visibleMenuItems = isAdmin ? adminMenuItems : cashierMenuItems;
 
     const handleLogout = () => {
         logout();
