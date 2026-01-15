@@ -51,6 +51,7 @@ function Home() {
 
      const socketRef = useRef(null);
      const [rejectedNotifs, setRejectedNotifs] = useState([]);
+     const [rejectedHydrated, setRejectedHydrated] = useState(false);
      const [unreadRejectedIds, setUnreadRejectedIds] = useState(() => new Set());
      const [rejectedModalOpen, setRejectedModalOpen] = useState(false);
      const [rejectedFilter, setRejectedFilter] = useState("today");
@@ -141,9 +142,11 @@ function Home() {
          } catch {
              // ignore
          }
+         setRejectedHydrated(true);
      }, []);
 
      useEffect(() => {
+         if (!rejectedHydrated) return;
          try {
              const list = Array.isArray(rejectedNotifs) ? rejectedNotifs : [];
              const cutoff = Date.now() - REJECTED_NOTIFS_KEEP_DAYS * 24 * 60 * 60 * 1000;
@@ -153,16 +156,15 @@ function Home() {
                  return ts && ts >= cutoff;
              });
 
+             localStorage.setItem(REJECTED_NOTIFS_STORAGE_KEY, JSON.stringify(pruned));
+
              if (pruned.length !== list.length) {
                  setRejectedNotifs(pruned);
-                 return;
              }
-
-             localStorage.setItem(REJECTED_NOTIFS_STORAGE_KEY, JSON.stringify(pruned));
          } catch {
              // ignore
          }
-     }, [rejectedNotifs]);
+     }, [rejectedNotifs, rejectedHydrated]);
 
     useEffect(() => {
         loadCategories();
@@ -296,7 +298,7 @@ function Home() {
 
             // Set order type and table number
             setOrderType(heldOrder.orderType || "Dine in");
-            setTableNumber(heldOrder.tableNumber || "Bàn 4");
+            setTableNumber(heldOrder.tableNumber || "Bàn 1");
 
             // Convert held order items to orderItems format
             const restoredItems = heldOrder.items.map((item, index) => {
@@ -898,21 +900,11 @@ function Home() {
                                          </div>
                                      </div>
 
-                                     <div className="mt-5 grid grid-cols-2 gap-4">
-                                         <button
-                                             type="button"
-                                             onClick={() => {
-                                                 closeRejectedDetail();
-                                                 openRejectedModal();
-                                             }}
-                                             className="py-3 rounded-xl border border-gray-200 text-gray-900 font-semibold hover:bg-gray-50"
-                                         >
-                                             Xem chi tiết
-                                         </button>
+                                     <div className="mt-5">
                                          <button
                                              type="button"
                                              onClick={closeRejectedDetail}
-                                             className="py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                                             className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
                                          >
                                              Đã hiểu
                                          </button>

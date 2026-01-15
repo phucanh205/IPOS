@@ -628,16 +628,6 @@ function Kitchen() {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="px-6 pb-6">
-                            <button
-                                type="button"
-                                onClick={closeDetailModal}
-                                className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
-                            >
-                                Đã hiểu
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
