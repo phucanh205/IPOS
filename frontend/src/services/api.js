@@ -62,6 +62,43 @@ export const getCategory = async (id) => {
     return response.data;
 };
 
+export const createCategory = async (data) => {
+    const response = await api.post("/categories", data);
+    return response.data;
+};
+
+export const updateCategory = async (id, data) => {
+    const response = await api.put(`/categories/${id}`, data);
+    return response.data;
+};
+
+export const deleteCategory = async (id) => {
+    const response = await api.delete(`/categories/${id}`);
+    return response.data;
+};
+
+export const getIngredients = async (search = "") => {
+    const params = {};
+    if (search) params.search = search;
+    const response = await api.get("/ingredients", { params });
+    return response.data;
+};
+
+export const createIngredient = async (data) => {
+    const response = await api.post("/ingredients", data);
+    return response.data;
+};
+
+export const updateIngredient = async (id, data) => {
+    const response = await api.put(`/ingredients/${id}`, data);
+    return response.data;
+};
+
+export const deleteIngredient = async (id) => {
+    const response = await api.delete(`/ingredients/${id}`);
+    return response.data;
+};
+
 export const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append("image", file);

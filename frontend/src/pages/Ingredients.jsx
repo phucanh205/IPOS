@@ -1,0 +1,464 @@
+import { useEffect, useMemo, useState } from "react";
+import Sidebar from "../components/Sidebar";
+import DateTimeDisplay from "../components/DateTimeDisplay";
+import { createIngredient, getIngredients, updateIngredient } from "../services/api";
+
+const UNIT_OPTIONS = [
+    { value: "pcs", label: "Chiếc" },
+    { value: "kg", label: "Kg" },
+    { value: "box", label: "Hộp" },
+];
+
+const ISSUE_RULE_OPTIONS = [
+    { value: "daily", label: "Nhận mỗi ngày" },
+    { value: "long_storage", label: "Tồn kho dài ngày" },
+    { value: "cycle", label: "Theo chu kỳ" },
+];
+
+const unitLabel = (unit) => UNIT_OPTIONS.find((u) => u.value === unit)?.label || unit || "";
+const issueRuleLabel = (rule) => ISSUE_RULE_OPTIONS.find((r) => r.value === rule)?.label || rule || "";
+
+function Ingredients() {
+    const [search, setSearch] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [ingredients, setIngredients] = useState([]);
+
+    const [modalOpen, setModalOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [editing, setEditing] = useState(null);
+
+    const [name, setName] = useState("");
+    const [group, setGroup] = useState("");
+    const [supplierName, setSupplierName] = useState("");
+    const [unit, setUnit] = useState("");
+    const [issueRule, setIssueRule] = useState("");
+    const [stockOnHand, setStockOnHand] = useState("");
+    const [cycleDays, setCycleDays] = useState("");
+    const [nextReceiveDate, setNextReceiveDate] = useState("");
+
+    useEffect(() => {
+        load();
+    }, []);
+
+    const load = async (q = search) => {
+        setLoading(true);
+        try {
+            const data = await getIngredients(q);
+            setIngredients(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error loading ingredients:", error);
+            setIngredients([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filtered = useMemo(() => {
+        const q = String(search || "").trim().toLowerCase();
+        if (!q) return ingredients;
+        return (ingredients || []).filter((i) => {
+            const hay = `${i?.name || ""} ${i?.group || ""} ${i?.supplierName || ""}`.toLowerCase();
+            return hay.includes(q);
+        });
+    }, [ingredients, search]);
+
+    const openNew = () => {
+        setEditing(null);
+        setName("");
+        setGroup("");
+        setSupplierName("");
+        setUnit("");
+        setIssueRule("");
+        setStockOnHand("");
+        setCycleDays("");
+        setNextReceiveDate("");
+        setModalOpen(true);
+    };
+
+    const openEdit = (ing) => {
+        setEditing(ing);
+        setName(ing?.name || "");
+        setGroup(ing?.group || "");
+        setSupplierName(ing?.supplierName || "");
+        setUnit(ing?.unit || "");
+        setIssueRule(ing?.issueRule || "");
+        setStockOnHand(
+            ing?.stockOnHand === 0 || ing?.stockOnHand ? String(ing.stockOnHand) : ""
+        );
+        setCycleDays(ing?.cycleDays === 0 || ing?.cycleDays ? String(ing.cycleDays) : "");
+        setNextReceiveDate(
+            ing?.nextReceiveDate ? String(ing.nextReceiveDate).slice(0, 10) : ""
+        );
+        setModalOpen(true);
+    };
+
+    const closeModal = () => {
+        if (saving) return;
+        setModalOpen(false);
+    };
+
+    const handleSave = async () => {
+        if (saving) return;
+
+        const trimmedName = String(name || "").trim();
+        const trimmedGroup = String(group || "").trim();
+        const trimmedSupplier = String(supplierName || "").trim();
+        if (!trimmedName) {
+            alert("Vui lòng nhập tên nguyên liệu");
+            return;
+        }
+        if (!trimmedGroup) {
+            alert("Vui lòng nhập nhóm nguyên liệu");
+            return;
+        }
+        if (!trimmedSupplier) {
+            alert("Vui lòng nhập nhà cung cấp");
+            return;
+        }
+        if (!unit) {
+            alert("Vui lòng chọn đơn vị tính");
+            return;
+        }
+        if (!issueRule) {
+            alert("Vui lòng chọn quy tắc cấp phát");
+            return;
+        }
+
+        const qtyNum = Number(stockOnHand);
+        if (stockOnHand === "" || Number.isNaN(qtyNum) || qtyNum < 0) {
+            alert("Vui lòng nhập số lượng hợp lệ");
+            return;
+        }
+
+        if (issueRule === "cycle") {
+            const cd = cycleDays === "" ? null : Number(cycleDays);
+            const hasCycleDays = cd !== null && !Number.isNaN(cd) && cd > 0;
+            const hasDate = !!String(nextReceiveDate || "").trim();
+            if (!hasCycleDays && !hasDate) {
+                alert("Theo chu kỳ: cần nhập chu kỳ (ngày) hoặc chọn ngày nhận hàng");
+                return;
+            }
+        }
+
+        const payload = {
+            name: trimmedName,
+            group: trimmedGroup,
+            supplierName: trimmedSupplier,
+            unit,
+            issueRule,
+        };
+
+        payload.stockOnHand = qtyNum;
+
+        if (issueRule === "cycle") {
+            payload.cycleDays = cycleDays === "" ? null : Number(cycleDays);
+            payload.nextReceiveDate = nextReceiveDate ? nextReceiveDate : null;
+        }
+
+        setSaving(true);
+        try {
+            if (editing?._id) {
+                await updateIngredient(editing._id, payload);
+            } else {
+                await createIngredient(payload);
+            }
+            await load();
+            setModalOpen(false);
+        } catch (error) {
+            console.error("Error saving ingredient:", error);
+            alert(
+                "Lỗi khi lưu nguyên liệu: " +
+                    (error.response?.data?.error || error.message)
+            );
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <>
+            <div className="flex h-screen bg-gray-100">
+                <Sidebar />
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="bg-white border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1">
+                                <div className="w-full max-w-xl">
+                                    <input
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Tìm theo tên nguyên liệu, nhóm"
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => load()}
+                                    className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-medium"
+                                >
+                                    Lọc
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={openNew}
+                                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+                                >
+                                    + Thêm nguyên liệu mới
+                                </button>
+                            </div>
+                            <DateTimeDisplay />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                            <div className="px-5 py-4 border-b border-gray-200">
+                                <div className="text-base font-semibold text-gray-900">
+                                    Danh sách nguyên liệu
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50 text-gray-600">
+                                        <tr>
+                                            <th className="text-left font-medium px-5 py-3">Tên nguyên liệu</th>
+                                            <th className="text-left font-medium px-5 py-3">Nhóm</th>
+                                            <th className="text-left font-medium px-5 py-3">Tồn kho</th>
+                                            <th className="text-left font-medium px-5 py-3">Nhà cung cấp</th>
+                                            <th className="text-left font-medium px-5 py-3">Quy tắc cấp phát</th>
+                                            <th className="text-left font-medium px-5 py-3">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {loading ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={6}
+                                                    className="px-5 py-10 text-center text-gray-400"
+                                                >
+                                                    Đang tải...
+                                                </td>
+                                            </tr>
+                                        ) : filtered.length === 0 ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={6}
+                                                    className="px-5 py-10 text-center text-gray-400"
+                                                >
+                                                    Không có nguyên liệu
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filtered.map((i) => (
+                                                <tr key={i._id} className="hover:bg-gray-50">
+                                                    <td className="px-5 py-3 font-medium text-gray-900">
+                                                        {i.name}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-gray-600">{i.group || ""}</td>
+                                                    <td className="px-5 py-3 text-gray-600">
+                                                        {new Intl.NumberFormat("vi-VN").format(
+                                                            Number(i.stockOnHand) || 0
+                                                        )}{" "}
+                                                        {unitLabel(i.unit)}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-gray-600">
+                                                        {i.supplierName || ""}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-gray-600">
+                                                        {issueRuleLabel(i.issueRule)}
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEdit(i)}
+                                                            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium"
+                                                        >
+                                                            Chỉnh sửa
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                            <div className="text-xl font-semibold text-gray-900">
+                                {editing ? "Chỉnh sửa nguyên liệu" : "Thêm nguyên liệu mới"}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 text-2xl"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <div className="text-sm text-gray-600 mb-1">Tên nguyên liệu</div>
+                                <input
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Nhập tên nguyên liệu (VD: Thịt bò, Cà chua...)"
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <div className="text-sm text-gray-600 mb-1">Nhóm nguyên liệu</div>
+                                    <input
+                                        value={group}
+                                        onChange={(e) => setGroup(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-sm text-gray-600 mb-1">Nhà cung cấp</div>
+                                    <input
+                                        value={supplierName}
+                                        onChange={(e) => setSupplierName(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <div className="text-sm text-gray-600 mb-1">Đơn vị tính</div>
+                                    <select
+                                        value={unit}
+                                        onChange={(e) => setUnit(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    >
+                                        <option value="">Chọn đơn vị</option>
+                                        {UNIT_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>
+                                                {o.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-gray-600 mb-1">Quy tắc cấp phát</div>
+                                    <select
+                                        value={issueRule}
+                                        onChange={(e) => setIssueRule(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    >
+                                        <option value="">Chọn quy tắc</option>
+                                        {ISSUE_RULE_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>
+                                                {o.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {(issueRule === "daily" || issueRule === "long_storage") && (
+                                <div>
+                                    <div className="text-sm text-gray-600 mb-1">Số lượng</div>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            value={stockOnHand}
+                                            onChange={(e) => setStockOnHand(e.target.value)}
+                                            placeholder="Điền số lượng (theo đơn vị)"
+                                            type="number"
+                                            min="0"
+                                            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                        />
+                                        <div className="text-sm text-gray-500 min-w-[64px]">
+                                            {unit ? unitLabel(unit) : ""}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {issueRule === "cycle" && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="text-sm text-gray-600 mb-1">Số lượng</div>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                value={stockOnHand}
+                                                onChange={(e) => setStockOnHand(e.target.value)}
+                                                placeholder="Điền số lượng (theo đơn vị)"
+                                                type="number"
+                                                min="0"
+                                                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                            />
+                                            <div className="text-sm text-gray-500 min-w-[64px]">
+                                                {unit ? unitLabel(unit) : ""}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="text-sm text-gray-600 mb-1">
+                                                Điền chu kỳ nhận (ngày)
+                                            </div>
+                                            <input
+                                                value={cycleDays}
+                                                onChange={(e) => setCycleDays(e.target.value)}
+                                                placeholder="vd: 2-3 ngày (Optional)"
+                                                type="number"
+                                                min="1"
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm text-gray-600 mb-1">
+                                                Hoặc chọn ngày nhận hàng
+                                            </div>
+                                            <input
+                                                value={nextReceiveDate}
+                                                onChange={(e) => setNextReceiveDate(e.target.value)}
+                                                type="date"
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-5 border-t border-gray-200 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                disabled={saving}
+                                className="px-6 py-3 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                                {editing ? "Lưu" : "Thêm mới"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
+
+export default Ingredients;

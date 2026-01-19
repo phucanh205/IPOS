@@ -21,6 +21,11 @@ function Sidebar() {
             path: "/products",
         },
         {
+            icon: "🥬",
+            label: "Nguyên liệu",
+            path: "/ingredients",
+        },
+        {
             icon: "🧾",
             label: "Lịch sử hóa đơn",
             path: "/orders",

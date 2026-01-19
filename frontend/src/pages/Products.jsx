@@ -6,15 +6,22 @@ import DateTimeDisplay from "../components/DateTimeDisplay";
 import ProductFormModal from "../components/ProductFormModal";
 import ProductDetailModal from "../components/ProductDetailModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import { useAuth } from "../contexts/AuthContext";
 import {
     getProducts,
     getCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
     createProduct,
     updateProduct,
     deleteProduct,
 } from "../services/api";
 
 function Products() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === "admin";
+
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -26,6 +33,13 @@ function Products() {
     const [editingProduct, setEditingProduct] = useState(null);
     const [detailProduct, setDetailProduct] = useState(null);
     const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
+
+    const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+    const [categoryDraft, setCategoryDraft] = useState([]);
+    const [categoryNewName, setCategoryNewName] = useState("");
+    const [categoryDeletedIds, setCategoryDeletedIds] = useState([]);
+    const [categoryOriginalNames, setCategoryOriginalNames] = useState({});
+    const [categorySaving, setCategorySaving] = useState(false);
 
     useEffect(() => {
         loadCategories();
@@ -42,6 +56,111 @@ function Products() {
         } catch (error) {
             console.error("Error loading categories:", error);
             setCategories([{ name: "Tất cả", slug: "all", _id: "all" }]);
+        }
+    };
+
+    const openCategoryModal = () => {
+        const real = (categories || []).filter((c) => c?._id && c._id !== "all");
+        const originalMap = real.reduce((acc, c) => {
+            acc[c._id] = c?.name || "";
+            return acc;
+        }, {});
+        setCategoryOriginalNames(originalMap);
+        setCategoryDraft(real.map((c) => ({ _id: c._id, name: c?.name || "" })));
+        setCategoryNewName("");
+        setCategoryDeletedIds([]);
+        setCategoryModalOpen(true);
+    };
+
+    const closeCategoryModal = () => {
+        if (categorySaving) return;
+        setCategoryModalOpen(false);
+    };
+
+    const updateDraftName = (id, name) => {
+        setCategoryDraft((prev) =>
+            prev.map((c) => (c._id === id ? { ...c, name } : c))
+        );
+    };
+
+    const removeDraftCategory = (id) => {
+        setCategoryDraft((prev) => prev.filter((c) => c._id !== id));
+        if (id && !String(id).startsWith("tmp_")) {
+            setCategoryDeletedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+        }
+    };
+
+    const addDraftCategory = () => {
+        const name = String(categoryNewName || "").trim();
+        if (!name) return;
+        const tmpId = `tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        setCategoryDraft((prev) => [...prev, { _id: tmpId, name }]);
+        setCategoryNewName("");
+    };
+
+    const saveCategoryChanges = async () => {
+        if (categorySaving) return;
+        setCategorySaving(true);
+
+        try {
+            const normalized = (categoryDraft || [])
+                .map((c) => ({ ...c, name: String(c?.name || "").trim() }))
+                .filter((c) => c.name);
+
+            const hasDuplicate = (() => {
+                const seen = new Set();
+                for (const c of normalized) {
+                    const key = c.name.toLowerCase();
+                    if (seen.has(key)) return true;
+                    seen.add(key);
+                }
+                return false;
+            })();
+
+            if (hasDuplicate) {
+                alert("Tên danh mục bị trùng. Vui lòng kiểm tra lại.");
+                return;
+            }
+
+            for (const id of categoryDeletedIds) {
+                await deleteCategory(id);
+            }
+
+            for (const c of normalized) {
+                const isTemp = String(c._id || "").startsWith("tmp_");
+                if (isTemp) continue;
+                const before = categoryOriginalNames?.[c._id] ?? "";
+                if (String(before).trim() !== c.name) {
+                    await updateCategory(c._id, { name: c.name });
+                }
+            }
+
+            for (const c of normalized) {
+                const isTemp = String(c._id || "").startsWith("tmp_");
+                if (!isTemp) continue;
+                await createCategory({ name: c.name });
+            }
+
+            if (String(categoryNewName || "").trim()) {
+                await createCategory({ name: String(categoryNewName).trim() });
+                setCategoryNewName("");
+            }
+
+            await loadCategories();
+
+            if (categoryDeletedIds.includes(selectedCategory)) {
+                setSelectedCategory("all");
+            }
+
+            setCategoryModalOpen(false);
+        } catch (error) {
+            console.error("Error saving categories:", error);
+            alert(
+                "Lỗi khi lưu danh mục: " +
+                    (error.response?.data?.error || error.message)
+            );
+        } finally {
+            setCategorySaving(false);
         }
     };
 
@@ -211,7 +330,19 @@ function Products() {
                                     onCategoryChange={handleCategoryChange}
                                 />
                             </div>
-                            <DateTimeDisplay />
+                            <div className="flex items-center gap-3">
+                                {isAdmin && (
+                                    <button
+                                        type="button"
+                                        onClick={openCategoryModal}
+                                        className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        <span className="text-xl leading-none">+</span>
+                                        <span className="font-medium">Thêm danh mục</span>
+                                    </button>
+                                )}
+                                <DateTimeDisplay />
+                            </div>
                         </div>
                     </div>
 
@@ -312,6 +443,89 @@ function Products() {
                 onClose={() => setDeleteConfirmProduct(null)}
                 onConfirm={handleConfirmDelete}
             />
+
+            {categoryModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                            <div className="text-lg font-semibold text-gray-900">
+                                Thêm Danh Mục
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeCategoryModal}
+                                className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+                            {categoryDraft.map((c) => (
+                                <div
+                                    key={c._id}
+                                    className="relative flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-5"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-500">
+                                        □
+                                    </div>
+                                    <input
+                                        value={c.name}
+                                        onChange={(e) =>
+                                            updateDraftName(c._id, e.target.value)
+                                        }
+                                        className="flex-1 bg-transparent outline-none text-gray-900 font-medium text-base"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeDraftCategory(c._id)}
+                                        className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 flex items-center justify-center text-gray-600"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+
+                            <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-5">
+                                <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-500">
+                                    □
+                                </div>
+                                <input
+                                    value={categoryNewName}
+                                    onChange={(e) => setCategoryNewName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            addDraftCategory();
+                                        }
+                                    }}
+                                    placeholder="Điền tên Danh mục mới..."
+                                    className="flex-1 bg-transparent outline-none text-gray-900 font-medium text-base"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-5 border-t border-gray-200 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeCategoryModal}
+                                disabled={categorySaving}
+                                className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-60"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={saveCategoryChanges}
+                                disabled={categorySaving}
+                                className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-60"
+                            >
+                                Lưu Danh mục
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

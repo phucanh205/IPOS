@@ -13,6 +13,7 @@ import HeldOrders from "./pages/HeldOrders";
 import Orders from "./pages/Orders";
 import Dashboard from "./pages/Dashboard";
 import Kitchen from "./pages/Kitchen";
+import Ingredients from "./pages/Ingredients";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
@@ -64,6 +65,14 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <Products />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/ingredients"
+                element={
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/ingredients">
+                        <Ingredients />
                     </ProtectedRoute>
                 }
             />

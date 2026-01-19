@@ -8,6 +8,7 @@ import http from "http";
 import { initSocket } from "./socket.js";
 import productRoutes from "./routes/products.js";
 import categoryRoutes from "./routes/categories.js";
+import ingredientRoutes from "./routes/ingredients.js";
 import uploadRoutes from "./routes/upload.js";
 import heldOrderRoutes from "./routes/heldOrders.js";
 import orderRoutes from "./routes/orders.js";
@@ -38,6 +39,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use(
+    "/api/ingredients",
+    ...authenticateAndCheckRole("admin"),
+    ingredientRoutes
+);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/held-orders", heldOrderRoutes);
 app.use("/api/orders", orderRoutes);
