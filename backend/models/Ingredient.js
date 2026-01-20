@@ -24,8 +24,33 @@ const ingredientSchema = new mongoose.Schema({
     },
     unit: {
         type: String,
-        enum: ["pcs", "kg", "box"],
         required: true,
+    },
+    baseUnit: {
+        type: String,
+        enum: ["pcs", "g", "ml"],
+        default: function () {
+            const u = String(this.unit || "").toLowerCase();
+            if (u === "kg") return "g";
+            if (u === "pcs") return "pcs";
+            if (u === "box") return "pcs";
+            return u || "pcs";
+        },
+    },
+    displayUnit: {
+        type: String,
+        default: function () {
+            return String(this.unit || "").trim() || "pcs";
+        },
+    },
+    conversionFactor: {
+        type: Number,
+        min: 0,
+        default: function () {
+            const u = String(this.unit || "").toLowerCase();
+            if (u === "kg") return 1000;
+            return 1;
+        },
     },
     issueRule: {
         type: String,
@@ -63,6 +88,21 @@ ingredientSchema.pre("save", async function (next) {
         } catch (error) {
             return next(error);
         }
+    }
+
+    if (!this.baseUnit) {
+        const u = String(this.unit || "").toLowerCase();
+        if (u === "kg") this.baseUnit = "g";
+        else if (u === "pcs") this.baseUnit = "pcs";
+        else if (u === "box") this.baseUnit = "pcs";
+        else this.baseUnit = u || "pcs";
+    }
+    if (!this.displayUnit) {
+        this.displayUnit = String(this.unit || "").trim() || this.baseUnit || "pcs";
+    }
+    if (!this.conversionFactor || Number(this.conversionFactor) <= 0) {
+        const u = String(this.unit || "").toLowerCase();
+        this.conversionFactor = u === "kg" ? 1000 : 1;
     }
 
     this.updatedAt = Date.now();

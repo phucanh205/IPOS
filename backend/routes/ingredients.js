@@ -31,6 +31,9 @@ router.post("/", async (req, res) => {
             group,
             supplierName,
             unit,
+            baseUnit,
+            displayUnit,
+            conversionFactor,
             issueRule,
             stockOnHand,
             cycleDays,
@@ -49,6 +52,16 @@ router.post("/", async (req, res) => {
         if (!unit) {
             return res.status(400).json({ error: "Unit is required" });
         }
+
+        const factorNum =
+            conversionFactor === undefined || conversionFactor === null || conversionFactor === ""
+                ? null
+                : Number(conversionFactor);
+        if (factorNum !== null && (Number.isNaN(factorNum) || factorNum <= 0)) {
+            return res
+                .status(400)
+                .json({ error: "Conversion factor must be a valid number" });
+        }
         if (!issueRule) {
             return res.status(400).json({ error: "Issue rule is required" });
         }
@@ -60,13 +73,24 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "Stock quantity must be a valid number" });
         }
 
+        const derivedDisplayUnit = String(displayUnit || unit || "").trim();
+        const derivedFactor =
+            factorNum !== null
+                ? factorNum
+                : String(derivedDisplayUnit).toLowerCase() === "kg"
+                ? 1000
+                : 1;
+
         const normalized = {
             name: String(name).trim(),
             group: String(group).trim(),
             supplierName: String(supplierName).trim(),
-            unit,
+            unit: String(displayUnit || unit).trim(),
+            baseUnit: baseUnit ? String(baseUnit).trim() : undefined,
+            displayUnit: displayUnit ? String(displayUnit).trim() : undefined,
+            conversionFactor: factorNum === null ? undefined : factorNum,
             issueRule,
-            stockOnHand: qtyNum,
+            stockOnHand: qtyNum * derivedFactor,
             cycleDays: cycleDays === "" || cycleDays === null || cycleDays === undefined ? null : Number(cycleDays),
             nextReceiveDate: nextReceiveDate ? new Date(nextReceiveDate) : null,
         };
@@ -95,6 +119,9 @@ router.put("/:id", async (req, res) => {
             group,
             supplierName,
             unit,
+            baseUnit,
+            displayUnit,
+            conversionFactor,
             issueRule,
             stockOnHand,
             cycleDays,
@@ -112,6 +139,20 @@ router.put("/:id", async (req, res) => {
         const nextGroup = group !== undefined ? String(group || "").trim() : String(existing.group || "").trim();
         const nextSupplier = supplierName !== undefined ? String(supplierName || "").trim() : String(existing.supplierName || "").trim();
         const nextUnit = unit !== undefined ? unit : existing.unit;
+        const nextDisplayUnit =
+            displayUnit !== undefined
+                ? String(displayUnit || "").trim()
+                : String(existing.displayUnit || existing.unit || "").trim();
+        const nextBaseUnit =
+            baseUnit !== undefined
+                ? String(baseUnit || "").trim()
+                : String(existing.baseUnit || "").trim();
+        const nextFactorRaw =
+            conversionFactor !== undefined ? conversionFactor : existing.conversionFactor;
+        const nextFactorNum =
+            nextFactorRaw === undefined || nextFactorRaw === null || nextFactorRaw === ""
+                ? null
+                : Number(nextFactorRaw);
         const nextRule = issueRule !== undefined ? issueRule : existing.issueRule;
         const nextQtyRaw = stockOnHand !== undefined ? stockOnHand : existing.stockOnHand;
         const nextQtyNum = Number(nextQtyRaw);
@@ -128,6 +169,11 @@ router.put("/:id", async (req, res) => {
         if (!nextUnit) {
             return res.status(400).json({ error: "Unit is required" });
         }
+        if (nextFactorNum !== null && (Number.isNaN(nextFactorNum) || nextFactorNum <= 0)) {
+            return res
+                .status(400)
+                .json({ error: "Conversion factor must be a valid number" });
+        }
         if (!nextRule) {
             return res.status(400).json({ error: "Issue rule is required" });
         }
@@ -138,12 +184,24 @@ router.put("/:id", async (req, res) => {
             return res.status(400).json({ error: "Stock quantity must be a valid number" });
         }
 
+        const effectiveFactor =
+            nextFactorNum !== null
+                ? nextFactorNum
+                : String(nextDisplayUnit).toLowerCase() === "kg"
+                ? 1000
+                : 1;
+
         update.name = nextName;
         update.group = nextGroup;
         update.supplierName = nextSupplier;
-        update.unit = nextUnit;
+        update.unit = String(nextDisplayUnit || nextUnit).trim();
+        if (baseUnit !== undefined) update.baseUnit = nextBaseUnit || null;
+        if (displayUnit !== undefined) update.displayUnit = nextDisplayUnit || null;
+        if (conversionFactor !== undefined) {
+            update.conversionFactor = nextFactorNum === null ? null : nextFactorNum;
+        }
         update.issueRule = nextRule;
-        update.stockOnHand = nextQtyNum;
+        update.stockOnHand = nextQtyNum * effectiveFactor;
 
         if (cycleDays !== undefined) {
             update.cycleDays =

@@ -3,10 +3,17 @@ import Sidebar from "../components/Sidebar";
 import DateTimeDisplay from "../components/DateTimeDisplay";
 import { createIngredient, getIngredients, updateIngredient } from "../services/api";
 
-const UNIT_OPTIONS = [
+const DISPLAY_UNIT_OPTIONS = [
     { value: "pcs", label: "Chiếc" },
     { value: "kg", label: "Kg" },
     { value: "box", label: "Hộp" },
+    { value: "custom", label: "Khác..." },
+];
+
+const BASE_UNIT_OPTIONS = [
+    { value: "pcs", label: "pcs" },
+    { value: "g", label: "g" },
+    { value: "ml", label: "ml" },
 ];
 
 const ISSUE_RULE_OPTIONS = [
@@ -15,7 +22,25 @@ const ISSUE_RULE_OPTIONS = [
     { value: "cycle", label: "Theo chu kỳ" },
 ];
 
-const unitLabel = (unit) => UNIT_OPTIONS.find((u) => u.value === unit)?.label || unit || "";
+const MEASURABLE_UNIT_DEFAULTS = {
+    kg: { baseUnit: "g", conversionFactor: "1000" },
+    g: { baseUnit: "g", conversionFactor: "1" },
+    l: { baseUnit: "ml", conversionFactor: "1000" },
+    ml: { baseUnit: "ml", conversionFactor: "1" },
+};
+
+const normalizeUnitKey = (u) => String(u || "").trim().toLowerCase();
+const isMeasurableUnit = (u) => {
+    const key = normalizeUnitKey(u);
+    return !!MEASURABLE_UNIT_DEFAULTS[key];
+};
+const getMeasurableDefaults = (u) => {
+    const key = normalizeUnitKey(u);
+    return MEASURABLE_UNIT_DEFAULTS[key] || null;
+};
+
+const displayUnitLabel = (unit) =>
+    DISPLAY_UNIT_OPTIONS.find((u) => u.value === unit)?.label || unit || "";
 const issueRuleLabel = (rule) => ISSUE_RULE_OPTIONS.find((r) => r.value === rule)?.label || rule || "";
 
 function Ingredients() {
@@ -30,11 +55,33 @@ function Ingredients() {
     const [name, setName] = useState("");
     const [group, setGroup] = useState("");
     const [supplierName, setSupplierName] = useState("");
-    const [unit, setUnit] = useState("");
+    const [displayUnit, setDisplayUnit] = useState("");
+    const [customDisplayUnit, setCustomDisplayUnit] = useState("");
+    const [baseUnit, setBaseUnit] = useState("");
+    const [conversionFactor, setConversionFactor] = useState("");
     const [issueRule, setIssueRule] = useState("");
     const [stockOnHand, setStockOnHand] = useState("");
     const [cycleDays, setCycleDays] = useState("");
     const [nextReceiveDate, setNextReceiveDate] = useState("");
+
+    const effectiveDisplayUnit =
+        displayUnit === "custom" ? String(customDisplayUnit || "").trim() : displayUnit;
+
+    const applyUnitDefaults = (nextDisplayUnit) => {
+        const u = normalizeUnitKey(nextDisplayUnit);
+        const measurableDefaults = getMeasurableDefaults(u);
+        if (measurableDefaults) {
+            setBaseUnit(measurableDefaults.baseUnit);
+            setConversionFactor(measurableDefaults.conversionFactor);
+            return;
+        }
+        if (u) {
+            setBaseUnit("pcs");
+            setConversionFactor("1");
+        }
+    };
+
+    const showConversionFields = isMeasurableUnit(effectiveDisplayUnit);
 
     useEffect(() => {
         load();
@@ -67,7 +114,10 @@ function Ingredients() {
         setName("");
         setGroup("");
         setSupplierName("");
-        setUnit("");
+        setDisplayUnit("");
+        setCustomDisplayUnit("");
+        setBaseUnit("");
+        setConversionFactor("");
         setIssueRule("");
         setStockOnHand("");
         setCycleDays("");
@@ -80,10 +130,24 @@ function Ingredients() {
         setName(ing?.name || "");
         setGroup(ing?.group || "");
         setSupplierName(ing?.supplierName || "");
-        setUnit(ing?.unit || "");
-        setIssueRule(ing?.issueRule || "");
+        const ingDisplayUnit = String(ing?.displayUnit || ing?.unit || "").trim();
+        const isKnown = ["pcs", "kg", "box"].includes(String(ingDisplayUnit).toLowerCase());
+        setDisplayUnit(isKnown ? String(ingDisplayUnit).toLowerCase() : "custom");
+        setCustomDisplayUnit(isKnown ? "" : ingDisplayUnit);
+        setBaseUnit(String(ing?.baseUnit || ""));
+        setConversionFactor(
+            ing?.conversionFactor === 0 || ing?.conversionFactor
+                ? String(ing.conversionFactor)
+                : ""
+        );
+
+        const factor = Number(
+            ing?.conversionFactor === 0 || ing?.conversionFactor ? ing.conversionFactor : 1
+        );
+        const baseQty = Number(ing?.stockOnHand) || 0;
+        const displayQty = factor > 0 ? baseQty / factor : baseQty;
         setStockOnHand(
-            ing?.stockOnHand === 0 || ing?.stockOnHand ? String(ing.stockOnHand) : ""
+            ing?.stockOnHand === 0 || ing?.stockOnHand ? String(displayQty) : ""
         );
         setCycleDays(ing?.cycleDays === 0 || ing?.cycleDays ? String(ing.cycleDays) : "");
         setNextReceiveDate(
@@ -115,8 +179,21 @@ function Ingredients() {
             alert("Vui lòng nhập nhà cung cấp");
             return;
         }
-        if (!unit) {
+        if (!effectiveDisplayUnit) {
             alert("Vui lòng chọn đơn vị tính");
+            return;
+        }
+
+        const resolvedBaseUnit = showConversionFields ? baseUnit : "pcs";
+        const resolvedFactor = showConversionFields ? conversionFactor : "1";
+
+        if (!resolvedBaseUnit) {
+            alert("Vui lòng chọn đơn vị gốc");
+            return;
+        }
+        const factorNum = Number(resolvedFactor);
+        if (resolvedFactor === "" || Number.isNaN(factorNum) || factorNum <= 0) {
+            alert("Vui lòng nhập hệ số quy đổi hợp lệ");
             return;
         }
         if (!issueRule) {
@@ -144,7 +221,10 @@ function Ingredients() {
             name: trimmedName,
             group: trimmedGroup,
             supplierName: trimmedSupplier,
-            unit,
+            unit: effectiveDisplayUnit,
+            displayUnit: effectiveDisplayUnit,
+            baseUnit: resolvedBaseUnit,
+            conversionFactor: factorNum,
             issueRule,
         };
 
@@ -258,9 +338,14 @@ function Ingredients() {
                                                     <td className="px-5 py-3 text-gray-600">{i.group || ""}</td>
                                                     <td className="px-5 py-3 text-gray-600">
                                                         {new Intl.NumberFormat("vi-VN").format(
-                                                            Number(i.stockOnHand) || 0
+                                                            (() => {
+                                                                const factor = Number(i?.conversionFactor) || 1;
+                                                                const baseQty = Number(i.stockOnHand) || 0;
+                                                                const displayQty = factor > 0 ? baseQty / factor : baseQty;
+                                                                return displayQty;
+                                                            })()
                                                         )}{" "}
-                                                        {unitLabel(i.unit)}
+                                                        {displayUnitLabel(i?.displayUnit || i.unit)}
                                                     </td>
                                                     <td className="px-5 py-3 text-gray-600">
                                                         {i.supplierName || ""}
@@ -338,17 +423,37 @@ function Ingredients() {
                                 <div>
                                     <div className="text-sm text-gray-600 mb-1">Đơn vị tính</div>
                                     <select
-                                        value={unit}
-                                        onChange={(e) => setUnit(e.target.value)}
+                                        value={displayUnit}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            setDisplayUnit(v);
+                                            if (v !== "custom") {
+                                                setCustomDisplayUnit("");
+                                                applyUnitDefaults(v);
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                                     >
                                         <option value="">Chọn đơn vị</option>
-                                        {UNIT_OPTIONS.map((o) => (
+                                        {DISPLAY_UNIT_OPTIONS.map((o) => (
                                             <option key={o.value} value={o.value}>
                                                 {o.label}
                                             </option>
                                         ))}
                                     </select>
+
+                                    {displayUnit === "custom" && (
+                                        <input
+                                            value={customDisplayUnit}
+                                            onChange={(e) => {
+                                                const next = e.target.value;
+                                                setCustomDisplayUnit(next);
+                                                applyUnitDefaults(next);
+                                            }}
+                                            placeholder="Nhập đơn vị (vd: lít, chai, gói...)"
+                                            className="mt-3 w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                        />
+                                    )}
                                 </div>
 
                                 <div>
@@ -368,69 +473,96 @@ function Ingredients() {
                                 </div>
                             </div>
 
-                            {(issueRule === "daily" || issueRule === "long_storage") && (
-                                <div>
-                                    <div className="text-sm text-gray-600 mb-1">Số lượng</div>
-                                    <div className="flex items-center gap-2">
+                            {showConversionFields && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="text-sm text-gray-600 mb-1">
+                                            Đơn vị gốc (trừ kho)
+                                        </div>
+                                        <select
+                                            value={baseUnit}
+                                            onChange={(e) => setBaseUnit(e.target.value)}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                        >
+                                            <option value="">Chọn đơn vị gốc</option>
+                                            {BASE_UNIT_OPTIONS.map((o) => (
+                                                <option key={o.value} value={o.value}>
+                                                    {o.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <div className="text-sm text-gray-600 mb-1">Hệ số quy đổi</div>
                                         <input
-                                            value={stockOnHand}
-                                            onChange={(e) => setStockOnHand(e.target.value)}
-                                            placeholder="Điền số lượng (theo đơn vị)"
+                                            value={conversionFactor}
+                                            onChange={(e) => setConversionFactor(e.target.value)}
+                                            placeholder="vd: 1 kg = 1000 g"
                                             type="number"
                                             min="0"
-                                            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                                         />
-                                        <div className="text-sm text-gray-500 min-w-[64px]">
-                                            {unit ? unitLabel(unit) : ""}
-                                        </div>
+
+                                        {(() => {
+                                            const qtyNum = Number(stockOnHand);
+                                            const factorNum = Number(conversionFactor);
+                                            const hasQty = stockOnHand !== "" && !Number.isNaN(qtyNum);
+                                            const hasFactor = conversionFactor !== "" && !Number.isNaN(factorNum);
+                                            if (!hasQty || !hasFactor || factorNum <= 0 || !baseUnit) return null;
+                                            const baseAmount = qtyNum * factorNum;
+                                            return (
+                                                <div className="mt-2 text-xs text-gray-500">
+                                                    {qtyNum} {effectiveDisplayUnit} = {baseAmount} {baseUnit}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
 
-                            {issueRule === "cycle" && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="text-sm text-gray-600 mb-1">Số lượng</div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                value={stockOnHand}
-                                                onChange={(e) => setStockOnHand(e.target.value)}
-                                                placeholder="Điền số lượng (theo đơn vị)"
-                                                type="number"
-                                                min="0"
-                                                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
-                                            />
-                                            <div className="text-sm text-gray-500 min-w-[64px]">
-                                                {unit ? unitLabel(unit) : ""}
-                                            </div>
-                                        </div>
+                            <div>
+                                <div className="text-sm text-gray-600 mb-1">Số lượng</div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        value={stockOnHand}
+                                        onChange={(e) => setStockOnHand(e.target.value)}
+                                        placeholder="Điền số lượng (theo đơn vị)"
+                                        type="number"
+                                        min="0"
+                                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                    />
+                                    <div className="text-sm text-gray-500 min-w-[64px]">
+                                        {effectiveDisplayUnit ? displayUnitLabel(effectiveDisplayUnit) : ""}
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="text-sm text-gray-600 mb-1">
-                                                Điền chu kỳ nhận (ngày)
-                                            </div>
-                                            <input
-                                                value={cycleDays}
-                                                onChange={(e) => setCycleDays(e.target.value)}
-                                                placeholder="vd: 2-3 ngày (Optional)"
-                                                type="number"
-                                                min="1"
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
-                                            />
+                            {issueRule === "cycle" && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="text-sm text-gray-600 mb-1">
+                                            Điền chu kỳ nhận (ngày)
                                         </div>
-                                        <div>
-                                            <div className="text-sm text-gray-600 mb-1">
-                                                Hoặc chọn ngày nhận hàng
-                                            </div>
-                                            <input
-                                                value={nextReceiveDate}
-                                                onChange={(e) => setNextReceiveDate(e.target.value)}
-                                                type="date"
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
-                                            />
+                                        <input
+                                            value={cycleDays}
+                                            onChange={(e) => setCycleDays(e.target.value)}
+                                            placeholder="vd: 2-3 ngày (Optional)"
+                                            type="number"
+                                            min="1"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-gray-600 mb-1">
+                                            Hoặc chọn ngày nhận hàng
                                         </div>
+                                        <input
+                                            value={nextReceiveDate}
+                                            onChange={(e) => setNextReceiveDate(e.target.value)}
+                                            type="date"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                                        />
                                     </div>
                                 </div>
                             )}

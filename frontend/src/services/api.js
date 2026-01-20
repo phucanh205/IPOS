@@ -99,6 +99,21 @@ export const deleteIngredient = async (id) => {
     return response.data;
 };
 
+export const getRecipeByProduct = async (productId) => {
+    const response = await api.get(`/recipes/product/${productId}`);
+    return response.data;
+};
+
+export const upsertRecipeByProduct = async (productId, items) => {
+    const response = await api.put(`/recipes/product/${productId}`, { items });
+    return response.data;
+};
+
+export const deleteRecipeByProduct = async (productId) => {
+    const response = await api.delete(`/recipes/product/${productId}`);
+    return response.data;
+};
+
 export const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append("image", file);

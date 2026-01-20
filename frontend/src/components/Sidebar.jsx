@@ -1,10 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuth();
+
+    const isIngredientsSectionActive =
+        location.pathname.startsWith("/ingredients") ||
+        location.pathname.startsWith("/recipes");
+    const [ingredientsOpen, setIngredientsOpen] = useState(
+        isIngredientsSectionActive
+    );
 
     const role = user?.role;
     const isAdmin = role === "admin";
@@ -19,11 +27,6 @@ function Sidebar() {
             icon: "🍔",
             label: "Danh sách sản phẩm",
             path: "/products",
-        },
-        {
-            icon: "🥬",
-            label: "Nguyên liệu",
-            path: "/ingredients",
         },
         {
             icon: "🧾",
@@ -91,6 +94,54 @@ function Sidebar() {
                         </button>
                     );
                 })}
+
+                {isAdmin && (
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setIngredientsOpen((v) => !v)}
+                            className={`w-full flex items-center justify-between gap-3 px-6 py-3 transition-all ${
+                                isIngredientsSectionActive
+                                    ? "bg-blue-600 text-white border-l-4 border-blue-400"
+                                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                            }`}
+                        >
+                            <span className="flex items-center gap-3">
+                                <span className="font-medium">Quản lý định mức</span>
+                            </span>
+                            <span className="text-lg">{ingredientsOpen ? "˄" : "˅"}</span>
+                        </button>
+
+                        {ingredientsOpen && (
+                            <div className="pl-8">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/ingredients")}
+                                    className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${
+                                        location.pathname.startsWith("/ingredients")
+                                            ? "bg-blue-600 text-white border-l-4 border-blue-400"
+                                            : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                                    }`}
+                                >
+                                    <span className="text-lg">🥬</span>
+                                    <span className="font-medium">Nguyên liệu</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate("/recipes")}
+                                    className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${
+                                        location.pathname.startsWith("/recipes")
+                                            ? "bg-blue-600 text-white border-l-4 border-blue-400"
+                                            : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                                    }`}
+                                >
+                                    <span className="text-lg">🍽️</span>
+                                    <span className="font-medium">Công thức</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Logout */}

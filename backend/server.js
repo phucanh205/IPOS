@@ -9,6 +9,7 @@ import { initSocket } from "./socket.js";
 import productRoutes from "./routes/products.js";
 import categoryRoutes from "./routes/categories.js";
 import ingredientRoutes from "./routes/ingredients.js";
+import recipeRoutes from "./routes/recipes.js";
 import uploadRoutes from "./routes/upload.js";
 import heldOrderRoutes from "./routes/heldOrders.js";
 import orderRoutes from "./routes/orders.js";
@@ -43,6 +44,11 @@ app.use(
     "/api/ingredients",
     ...authenticateAndCheckRole("admin"),
     ingredientRoutes
+);
+app.use(
+    "/api/recipes",
+    ...authenticateAndCheckRole("admin"),
+    recipeRoutes
 );
 app.use("/api/upload", uploadRoutes);
 app.use("/api/held-orders", heldOrderRoutes);
