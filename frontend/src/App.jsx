@@ -13,8 +13,10 @@ import HeldOrders from "./pages/HeldOrders";
 import Orders from "./pages/Orders";
 import Dashboard from "./pages/Dashboard";
 import Kitchen from "./pages/Kitchen";
+import KitchenReceiving from "./pages/KitchenReceiving";
 import Ingredients from "./pages/Ingredients";
 import Recipes from "./pages/Recipes";
+import AdminReceiving from "./pages/AdminReceiving";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
@@ -86,6 +88,14 @@ function AppRoutes() {
                 }
             />
             <Route
+                path="/admin/receiving"
+                element={
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/admin/receiving">
+                        <AdminReceiving />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/held-orders"
                 element={
                     <ProtectedRoute>
@@ -109,6 +119,17 @@ function AppRoutes() {
                         redirectTo="/kitchen"
                     >
                         <Kitchen />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/kitchen/receiving"
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["kitchen"]}
+                        redirectTo="/kitchen/receiving"
+                    >
+                        <KitchenReceiving />
                     </ProtectedRoute>
                 }
             />

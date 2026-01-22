@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 function Kitchen() {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pendingReceivingCount, setPendingReceivingCount] = useState(0);
     const [cancelModal, setCancelModal] = useState({
         open: false,
         order: null,
@@ -45,8 +48,21 @@ function Kitchen() {
         }
     };
 
+    const fetchReceivingCount = async () => {
+        try {
+            const res = await api.get("/kitchen/receiving-tasks");
+            const data = res.data || {};
+            const dailyCount = Array.isArray(data?.daily) ? data.daily.length : 0;
+            const otherCount = Array.isArray(data?.other) ? data.other.length : 0;
+            setPendingReceivingCount(dailyCount + otherCount);
+        } catch (e) {
+            setPendingReceivingCount(0);
+        }
+    };
+
     useEffect(() => {
         fetchOrders();
+        fetchReceivingCount();
     }, []);
 
     useEffect(() => {
@@ -339,7 +355,21 @@ function Kitchen() {
                         <div className="text-sm text-gray-500">Bếp nhận đơn</div>
                         <div className="text-lg font-semibold text-gray-900">Màn hình bếp</div>
                     </div>
-                    <div className="text-sm text-gray-500">{nowText}</div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/kitchen/receiving")}
+                            className="relative px-7 py-4 rounded-3xl bg-rose-200 text-gray-900 font-semibold hover:bg-rose-300 transition-colors"
+                        >
+                            Nhận Hàng bếp
+                            {pendingReceivingCount > 0 && (
+                                <span className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-bold">
+                                    {pendingReceivingCount}
+                                </span>
+                            )}
+                        </button>
+                        <div className="text-sm text-gray-500">{nowText}</div>
+                    </div>
                 </div>
 
                 <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-5">

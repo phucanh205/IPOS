@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import DateTimeDisplay from "../components/DateTimeDisplay";
-import { createIngredient, getIngredients, updateIngredient } from "../services/api";
+import { createIngredient, deleteIngredient, getIngredients, updateIngredient } from "../services/api";
 
 const DISPLAY_UNIT_OPTIONS = [
     { value: "pcs", label: "Chiếc" },
@@ -51,6 +51,9 @@ function Ingredients() {
     const [modalOpen, setModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [editing, setEditing] = useState(null);
+
+    const [deleteModal, setDeleteModal] = useState({ open: false, ing: null });
+    const [deleting, setDeleting] = useState(false);
 
     const [name, setName] = useState("");
     const [group, setGroup] = useState("");
@@ -159,6 +162,34 @@ function Ingredients() {
     const closeModal = () => {
         if (saving) return;
         setModalOpen(false);
+    };
+
+    const openDeleteModal = (ing) => {
+        setDeleteModal({ open: true, ing });
+    };
+
+    const closeDeleteModal = () => {
+        if (deleting) return;
+        setDeleteModal({ open: false, ing: null });
+    };
+
+    const confirmDelete = async () => {
+        const ing = deleteModal.ing;
+        if (!ing?._id || deleting) return;
+        setDeleting(true);
+        try {
+            await deleteIngredient(ing._id);
+            await load();
+            setDeleteModal({ open: false, ing: null });
+        } catch (error) {
+            console.error("Error deleting ingredient:", error);
+            alert(
+                "Lỗi khi xóa nguyên liệu: " +
+                    (error.response?.data?.error || error.message)
+            );
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const handleSave = async () => {
@@ -307,7 +338,7 @@ function Ingredients() {
                                             <th className="text-left font-medium px-5 py-3">Tồn kho</th>
                                             <th className="text-left font-medium px-5 py-3">Nhà cung cấp</th>
                                             <th className="text-left font-medium px-5 py-3">Quy tắc cấp phát</th>
-                                            <th className="text-left font-medium px-5 py-3">Thao tác</th>
+                                            <th className="text-center font-medium px-5 py-3">Thao tác</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -353,14 +384,23 @@ function Ingredients() {
                                                     <td className="px-5 py-3 text-gray-600">
                                                         {issueRuleLabel(i.issueRule)}
                                                     </td>
-                                                    <td className="px-5 py-3">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openEdit(i)}
-                                                            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium"
-                                                        >
-                                                            Chỉnh sửa
-                                                        </button>
+                                                    <td className="px-5 py-3 text-center">
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEdit(i)}
+                                                                className="px-6 py-2 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                                                            >
+                                                                Chỉnh sửa
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openDeleteModal(i)}
+                                                                className="px-6 py-2 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                                                            >
+                                                                Xóa
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))
@@ -584,6 +624,52 @@ function Ingredients() {
                                 className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60"
                             >
                                 {editing ? "Lưu" : "Thêm mới"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                            <div className="text-xl font-semibold text-gray-900">Xác nhận xóa</div>
+                            <button
+                                type="button"
+                                onClick={closeDeleteModal}
+                                disabled={deleting}
+                                className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 text-2xl disabled:opacity-60"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="text-sm text-gray-700">
+                                Bạn có chắc muốn xóa nguyên liệu <span className="font-semibold">{deleteModal.ing?.name}</span> không?
+                            </div>
+                            <div className="mt-2 text-xs text-gray-500">
+                                Hành động này không thể hoàn tác.
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-5 border-t border-gray-200 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDeleteModal}
+                                disabled={deleting}
+                                className="px-6 py-3 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                disabled={deleting}
+                                className="px-6 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60"
+                            >
+                                {deleting ? "Đang xóa..." : "Xóa"}
                             </button>
                         </div>
                     </div>

@@ -3,6 +3,18 @@ import Ingredient from "../models/Ingredient.js";
 
 const router = express.Router();
 
+const startOfDay = (d) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+};
+
+const addDays = (d, days) => {
+    const x = new Date(d);
+    x.setDate(x.getDate() + Number(days || 0));
+    return x;
+};
+
 router.get("/", async (req, res) => {
     try {
         const { search = "" } = req.query || {};
@@ -102,6 +114,10 @@ router.post("/", async (req, res) => {
                 return res.status(400).json({
                     error: "Cycle rule requires cycleDays or nextReceiveDate",
                 });
+            }
+
+            if (!hasDate && hasCycle) {
+                normalized.nextReceiveDate = addDays(startOfDay(new Date()), normalized.cycleDays);
             }
         }
 
@@ -222,6 +238,10 @@ router.put("/:id", async (req, res) => {
                 return res.status(400).json({
                     error: "Cycle rule requires cycleDays or nextReceiveDate",
                 });
+            }
+
+            if (!hasDate && hasCycle) {
+                update.nextReceiveDate = addDays(startOfDay(new Date()), nextCycleDays);
             }
         }
 

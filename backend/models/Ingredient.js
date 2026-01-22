@@ -69,6 +69,18 @@ const ingredientSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    parLevel: {
+        type: Number,
+        default: null,
+    },
+    minStockLevel: {
+        type: Number,
+        default: null,
+    },
+    lastReceivedAt: {
+        type: Date,
+        default: null,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -103,6 +115,16 @@ ingredientSchema.pre("save", async function (next) {
     if (!this.conversionFactor || Number(this.conversionFactor) <= 0) {
         const u = String(this.unit || "").toLowerCase();
         this.conversionFactor = u === "kg" ? 1000 : 1;
+    }
+
+    if (this.parLevel === null || this.parLevel === undefined) {
+        this.parLevel = typeof this.stockOnHand === "number" ? this.stockOnHand : 0;
+    }
+    if (this.minStockLevel === null || this.minStockLevel === undefined) {
+        if (this.issueRule === "long_storage") {
+            const base = typeof this.parLevel === "number" ? this.parLevel : 0;
+            this.minStockLevel = base / 2;
+        }
     }
 
     this.updatedAt = Date.now();

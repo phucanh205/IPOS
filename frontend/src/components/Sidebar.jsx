@@ -19,17 +19,18 @@ function Sidebar() {
 
     const adminMenuItems = [
         {
-            icon: "📊",
             label: "Tổng quan",
             path: "/dashboard",
         },
         {
-            icon: "🍔",
+            label: "Quản lý nhập hàng",
+            path: "/admin/receiving",
+        },
+        {
             label: "Danh sách sản phẩm",
             path: "/products",
         },
         {
-            icon: "🧾",
             label: "Lịch sử hóa đơn",
             path: "/orders",
         },

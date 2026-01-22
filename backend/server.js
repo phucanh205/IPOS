@@ -16,6 +16,7 @@ import orderRoutes from "./routes/orders.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import authRoutes from "./routes/auth.js";
 import kitchenRoutes from "./routes/kitchen.js";
+import adminReceivingRoutes from "./routes/adminReceiving.js";
 import { authenticateAndCheckRole } from "./middleware/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,11 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/held-orders", heldOrderRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use(
+    "/api/admin/receiving",
+    ...authenticateAndCheckRole("admin"),
+    adminReceivingRoutes
+);
 app.use(
     "/api/kitchen",
     ...authenticateAndCheckRole("kitchen"),
