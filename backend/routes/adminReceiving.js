@@ -31,8 +31,7 @@ const toDisplayQty = (baseQty, factor) => {
 router.get("/low-stock", async (req, res) => {
     try {
         const ingredients = await Ingredient.find({
-            issueRule: "long_storage",
-            minStockLevel: { $ne: null },
+            parLevel: { $ne: null },
         }).sort({ name: 1 });
 
         const lowStock = [];
@@ -41,9 +40,16 @@ router.get("/low-stock", async (req, res) => {
         for (const ing of ingredients) {
             const factor = safeNumber(ing?.conversionFactor, 1);
             const stockDisplay = toDisplayQty(ing?.stockOnHand, factor);
-            const minDisplay = toDisplayQty(ing?.minStockLevel, factor);
+            const parDisplay = toDisplayQty(ing?.parLevel, factor);
+            const fallbackMinDisplay = toDisplayQty(ing?.minStockLevel, factor);
+            const thresholdDisplay =
+                parDisplay > 0
+                    ? parDisplay * 0.1
+                    : fallbackMinDisplay > 0
+                    ? fallbackMinDisplay * 0.1
+                    : 0;
 
-            if (stockDisplay < minDisplay) {
+            if (thresholdDisplay > 0 && stockDisplay < thresholdDisplay) {
                 let alert = null;
                 try {
                     alert = await LowStockAlert.findOneAndUpdate(
@@ -69,7 +75,7 @@ router.get("/low-stock", async (req, res) => {
                     name: ing.name,
                     displayUnit: String(ing?.displayUnit || ing?.unit || "").trim(),
                     stockQty: stockDisplay,
-                    minQty: minDisplay,
+                    minQty: thresholdDisplay,
                     alertStatus: alert?.status || "open",
                     alertUpdatedAt: alert?.lastSeenAt || null,
                 });

@@ -205,6 +205,8 @@ function AdminReceiving() {
                                                 ? "border-rose-200 bg-rose-50"
                                                 : "border-amber-200 bg-amber-50";
 
+                                            const reported = it.alertStatus === "reported";
+
                                             return (
                                                 <div key={it._id} className={`rounded-2xl border p-4 ${cardCls}`}>
                                                     <div className="flex items-start justify-between gap-3">
@@ -220,11 +222,15 @@ function AdminReceiving() {
                                                     <div className="mt-4 flex items-center gap-3">
                                                         <button
                                                             type="button"
-                                                            disabled={actingId === it._id}
+                                                            disabled={actingId === it._id || reported}
                                                             onClick={() => doLowStockAction(it._id, "report")}
-                                                            className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-60"
+                                                            className={`px-4 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-60 ${
+                                                                reported
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-rose-600 hover:bg-rose-700"
+                                                            }`}
                                                         >
-                                                            Báo quản lý
+                                                            {reported ? "Đã báo quản lý" : "Báo quản lý"}
                                                         </button>
                                                         <button
                                                             type="button"

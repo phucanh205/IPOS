@@ -4,6 +4,7 @@ import Order from "../models/Order.js";
 import Ingredient from "../models/Ingredient.js";
 import ReceivingLog from "../models/ReceivingLog.js";
 import Recipe from "../models/Recipe.js";
+import LowStockAlert from "../models/LowStockAlert.js";
 import { getIO } from "../socket.js";
 
 const router = express.Router();
@@ -197,6 +198,13 @@ router.get("/receiving-tasks", async (req, res) => {
 
         const ingredients = await Ingredient.find({}).sort({ name: 1 });
 
+        const reportedAlerts = await LowStockAlert.find({ status: "reported" }).select(
+            "ingredientId status"
+        );
+        const reportedSet = new Set(
+            (Array.isArray(reportedAlerts) ? reportedAlerts : []).map((a) => String(a?.ingredientId))
+        );
+
         const daily = [];
         const other = [];
 
@@ -244,7 +252,14 @@ router.get("/receiving-tasks", async (req, res) => {
 
             if (rule === "long_storage") {
                 const min = minDisplay ?? ((parDisplay ?? stockDisplay) / 2);
-                if (stockDisplay < min) {
+                const threshold =
+                    parDisplay !== null && parDisplay !== undefined && parDisplay > 0
+                        ? parDisplay * 0.1
+                        : min > 0
+                        ? min * 0.1
+                        : 0;
+                const isReported = reportedSet.has(String(ing?._id));
+                if (isReported && threshold > 0 && stockDisplay < threshold) {
                     other.push({
                         _id: ing._id,
                         name: ing.name,
@@ -253,7 +268,8 @@ router.get("/receiving-tasks", async (req, res) => {
                         suggestedQty,
                         currentQty: stockDisplay,
                         reason: "low_stock",
-                        minQty: min,
+                        minQty: threshold,
+                        alertStatus: "reported",
                     });
                 }
             }

@@ -359,17 +359,17 @@ router.post("/", async (req, res) => {
                 order.ingredientsRestockedBy = "";
 
                 await order.save();
-            }
+            } else {
+                if (String(e?.code || "") === "RECIPE_MISSING") {
+                    return handleRecipeMissing(e?.payload?.missingRecipes);
+                }
 
-            if (String(e?.code || "") === "RECIPE_MISSING") {
-                return handleRecipeMissing(e?.payload?.missingRecipes);
-            }
+                if (String(e?.code || "") === "INSUFFICIENT_INGREDIENTS") {
+                    return handleInsufficient(e?.payload?.shortages);
+                }
 
-            if (String(e?.code || "") === "INSUFFICIENT_INGREDIENTS") {
-                return handleInsufficient(e?.payload?.shortages);
+                throw e;
             }
-
-            throw e;
         } finally {
             if (session) {
                 try {
