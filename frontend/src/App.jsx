@@ -23,6 +23,8 @@ function AppRoutes() {
     const location = useLocation();
     const { isAuthenticated, isLoading, user } = useAuth();
 
+    const forceLogin = new URLSearchParams(location.search).get("force") === "1";
+
     const getDefaultPath = () => {
         if (user?.role === "cashier") return "/home";
         if (user?.role === "admin") return "/dashboard";
@@ -39,8 +41,8 @@ function AppRoutes() {
         );
     }
 
-    // If authenticated and on login page, redirect to dashboard
-    if (isAuthenticated && location.pathname === "/login") {
+    // If authenticated and on login page, redirect to dashboard (unless forced)
+    if (isAuthenticated && location.pathname === "/login" && !forceLogin) {
         return <Navigate to={getDefaultPath()} replace />;
     }
 
@@ -50,7 +52,7 @@ function AppRoutes() {
             <Route
                 path="/dashboard"
                 element={
-                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/dashboard">
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/login?force=1">
                         <Dashboard />
                     </ProtectedRoute>
                 }
@@ -74,7 +76,7 @@ function AppRoutes() {
             <Route
                 path="/ingredients"
                 element={
-                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/ingredients">
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/login?force=1">
                         <Ingredients />
                     </ProtectedRoute>
                 }
@@ -82,7 +84,7 @@ function AppRoutes() {
             <Route
                 path="/recipes"
                 element={
-                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/recipes">
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/login?force=1">
                         <Recipes />
                     </ProtectedRoute>
                 }
@@ -90,7 +92,7 @@ function AppRoutes() {
             <Route
                 path="/admin/receiving"
                 element={
-                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/admin/receiving">
+                    <ProtectedRoute allowedRoles={["admin"]} redirectTo="/login?force=1">
                         <AdminReceiving />
                     </ProtectedRoute>
                 }
@@ -116,7 +118,7 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["kitchen"]}
-                        redirectTo="/kitchen"
+                        redirectTo="/login?force=1"
                     >
                         <Kitchen />
                     </ProtectedRoute>
@@ -127,7 +129,7 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["kitchen"]}
-                        redirectTo="/kitchen/receiving"
+                        redirectTo="/login?force=1"
                     >
                         <KitchenReceiving />
                     </ProtectedRoute>
@@ -136,10 +138,7 @@ function AppRoutes() {
             <Route
                 path="/"
                 element={
-                    <Navigate
-                        to={isAuthenticated ? getDefaultPath() : "/login"}
-                        replace
-                    />
+                    <Navigate to="/login?force=1" replace />
                 }
             />
         </Routes>

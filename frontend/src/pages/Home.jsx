@@ -17,6 +17,7 @@ import {
     createHeldOrder,
     createOrder,
     getHeldOrder,
+    getProductsAvailability,
 } from "../services/api";
 
 const REJECTED_NOTIFS_STORAGE_KEY = "pos_rejected_notifs_v1";
@@ -30,6 +31,7 @@ function Home() {
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [orderItems, setOrderItems] = useState([]);
+    const [availabilityByProductId, setAvailabilityByProductId] = useState({});
     const [editingItem, setEditingItem] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [orderType, setOrderType] = useState("Dine in");
@@ -394,7 +396,68 @@ function Home() {
         setSearchQuery(query);
     };
 
-    const handleAddProduct = (product) => {
+    const buildCartItemsPayload = () => {
+        return (Array.isArray(orderItems) ? orderItems : [])
+            .map((it) => ({
+                productId: it?.product?._id,
+                quantity: it?.quantity,
+            }))
+            .filter((x) => x.productId && Number(x.quantity) > 0);
+    };
+
+    const refreshAvailability = async (productIdsOverride = null, cartItemsOverride = null) => {
+        const productIds = Array.isArray(productIdsOverride)
+            ? productIdsOverride
+            : (Array.isArray(products) ? products : []).map((p) => p?._id).filter(Boolean);
+        const cartItems = Array.isArray(cartItemsOverride)
+            ? cartItemsOverride
+            : buildCartItemsPayload();
+
+        if (!productIds.length) return;
+
+        try {
+            const res = await getProductsAvailability(productIds, cartItems);
+            const list = Array.isArray(res?.items) ? res.items : [];
+            const next = {};
+            for (const it of list) {
+                if (it?.productId) next[it.productId] = it;
+            }
+            setAvailabilityByProductId(next);
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    useEffect(() => {
+        if (!products.length) return;
+        refreshAvailability();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [products, orderItems]);
+
+    const ensureCanAddProduct = async (productId) => {
+        if (!productId) return false;
+
+        const cartItems = buildCartItemsPayload();
+        try {
+            const res = await getProductsAvailability([productId], cartItems);
+            const first = Array.isArray(res?.items) ? res.items[0] : null;
+            if (first?.productId) {
+                setAvailabilityByProductId((prev) => ({
+                    ...prev,
+                    [first.productId]: first,
+                }));
+            }
+            return !!first?.canAdd;
+        } catch {
+            return true;
+        }
+    };
+
+    const handleAddProduct = async (product) => {
+        const productId = product?._id;
+        const ok = await ensureCanAddProduct(productId);
+        if (!ok) return;
+
         // Kiểm tra xem sản phẩm đã tồn tại trong order chưa (chỉ cần cùng product._id)
         const existing = orderItems.find(
             (item) => item.product._id === product._id
@@ -453,7 +516,14 @@ function Home() {
         setIsModalOpen(false);
     };
 
-    const handleIncreaseQty = (id) => {
+    const handleIncreaseQty = async (id) => {
+        const current = Array.isArray(orderItems)
+            ? orderItems.find((x) => x?.id === id)
+            : null;
+        const productId = current?.product?._id;
+        const ok = await ensureCanAddProduct(productId);
+        if (!ok) return;
+
         setOrderItems((prev) =>
             prev.map((item) =>
                 item.id === id
@@ -559,6 +629,32 @@ function Home() {
             setEditingItem(null);
         } catch (error) {
             console.error("Error placing order:", error);
+            const status = error?.response?.status;
+            const code = error?.response?.data?.code;
+
+            if (status === 409 && code === "INSUFFICIENT_INGREDIENTS") {
+                const shortages = Array.isArray(error?.response?.data?.shortages)
+                    ? error.response.data.shortages
+                    : [];
+                const text = shortages
+                    .map((s) => `${s?.ingredientName || ""} thiếu ${s?.shortage || 0} ${s?.baseUnit || ""}`)
+                    .filter(Boolean)
+                    .join("\n");
+                alert(text ? `Không đủ nguyên liệu:\n${text}` : "Không đủ nguyên liệu.");
+                return;
+            }
+
+            if (status === 409 && code === "RECIPE_MISSING") {
+                const missing = Array.isArray(error?.response?.data?.missingRecipes)
+                    ? error.response.data.missingRecipes
+                    : [];
+                const text = missing
+                    .map((m) => m?.productName || m?.productId)
+                    .filter(Boolean)
+                    .join("\n");
+                alert(text ? `Chưa có công thức cho món:\n${text}` : "Chưa có công thức cho món.");
+                return;
+            }
             alert(
                 "Lỗi khi đặt hàng: " +
                     (error.response?.data?.error || error.message)
@@ -609,6 +705,7 @@ function Home() {
                                     products={products}
                                     loading={loading}
                                     onProductClick={handleAddProduct}
+                                    availabilityByProductId={availabilityByProductId}
                                 />
                             </div>
                         </div>

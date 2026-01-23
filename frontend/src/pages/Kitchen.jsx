@@ -8,6 +8,11 @@ function Kitchen() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pendingReceivingCount, setPendingReceivingCount] = useState(0);
+    const [insufficientModal, setInsufficientModal] = useState({
+        open: false,
+        order: null,
+        shortages: [],
+    });
     const [cancelModal, setCancelModal] = useState({
         open: false,
         order: null,
@@ -113,8 +118,42 @@ function Kitchen() {
             setOrders((prev) => prev.map((o) => (o._id === updated?._id ? updated : o)));
         } catch (e) {
             console.error(e);
+            const status = e?.response?.status;
+            const code = e?.response?.data?.code;
+
+            if (status === 401) {
+                alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                navigate("/login?force=1", { replace: true });
+                return;
+            }
+
+            if (status === 409 && code === "INSUFFICIENT_INGREDIENTS") {
+                const shortages = Array.isArray(e?.response?.data?.shortages)
+                    ? e.response.data.shortages
+                    : [];
+                const order = (orders || []).find((o) => o?._id === orderId) || null;
+                setInsufficientModal({ open: true, order, shortages });
+                return;
+            }
+
+            if (status === 409 && code === "RECIPE_MISSING") {
+                const missing = Array.isArray(e?.response?.data?.missingRecipes)
+                    ? e.response.data.missingRecipes
+                    : [];
+                const text = missing
+                    .map((m) => m?.productName || m?.productId)
+                    .filter(Boolean)
+                    .join("\n");
+                alert(text ? `Chưa có công thức cho món:\n${text}` : "Chưa có công thức cho món.");
+                return;
+            }
+
             alert("Không thể cập nhật trạng thái. Vui lòng thử lại.");
         }
+    };
+
+    const closeInsufficientModal = () => {
+        setInsufficientModal({ open: false, order: null, shortages: [] });
     };
 
     const getCancelReasonText = (key) => {
@@ -463,6 +502,129 @@ function Kitchen() {
                     <div className="mt-4 text-sm text-gray-400">Đang tải...</div>
                 )}
             </div>
+
+            {insufficientModal.open && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                    onClick={closeInsufficientModal}
+                >
+                    <div
+                        className="bg-white rounded-3xl w-full max-w-xl mx-4 shadow-xl overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-8 pt-10 pb-6">
+                            <div className="text-center text-4xl font-semibold text-gray-900">
+                                Thiếu Nguyên liệu
+                            </div>
+
+                            <div className="mt-8 rounded-2xl bg-slate-100 p-6">
+                                <div className="grid grid-cols-[120px_12px_1fr] gap-x-4 gap-y-4 text-lg">
+                                    <div className="text-gray-500">Món</div>
+                                    <div className="text-gray-500">:</div>
+                                    <div className="text-gray-900">
+                                        {Array.isArray(insufficientModal.order?.items) &&
+                                        insufficientModal.order.items.length ? (
+                                            insufficientModal.order.items.map((it, idx) => (
+                                                <div
+                                                    key={`${it?.productId || it?.productName || "item"}-${idx}`}
+                                                    className={idx === 0 ? "" : "mt-2"}
+                                                >
+                                                    {it?.quantity}x {it?.productName}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-gray-700">(Không có thông tin món)</div>
+                                        )}
+                                    </div>
+
+                                    <div className="text-gray-500">Topping thêm</div>
+                                    <div className="text-gray-500">:</div>
+                                    <div className="text-gray-900">
+                                        {Array.isArray(insufficientModal.order?.items) &&
+                                        insufficientModal.order.items.some(
+                                            (it) => Array.isArray(it?.toppings) && it.toppings.length
+                                        ) ? (
+                                            insufficientModal.order.items
+                                                .flatMap((it) =>
+                                                    (Array.isArray(it?.toppings) ? it.toppings : []).map((t) => ({
+                                                        topping: t,
+                                                        qty: it?.quantity,
+                                                        productName: it?.productName,
+                                                    }))
+                                                )
+                                                .map((x, idx) => (
+                                                    <div key={`${x?.topping || "t"}-${idx}`}>{x.topping}</div>
+                                                ))
+                                        ) : (
+                                            <div className="text-gray-700">Không có</div>
+                                        )}
+                                    </div>
+
+                                    <div className="text-gray-500">Note</div>
+                                    <div className="text-gray-500">:</div>
+                                    <div className="text-gray-900">
+                                        {Array.isArray(insufficientModal.order?.items) &&
+                                        insufficientModal.order.items.some((it) => (it?.notes || "").trim()) ? (
+                                            insufficientModal.order.items
+                                                .map((it) => (it?.notes || "").trim())
+                                                .filter(Boolean)
+                                                .map((n, idx) => (
+                                                    <div key={`${n}-${idx}`}>{n}</div>
+                                                ))
+                                        ) : (
+                                            <div className="text-gray-700">Không có</div>
+                                        )}
+                                    </div>
+
+                                    <div className="text-gray-500">Thời gian</div>
+                                    <div className="text-gray-500">:</div>
+                                    <div className="text-gray-900 font-semibold">
+                                        {insufficientModal.order ? formatTime(insufficientModal.order) : ""}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <div className="text-sm font-semibold text-gray-900">
+                                    Nguyên liệu thiếu
+                                </div>
+                                <div className="mt-3 space-y-2">
+                                    {(Array.isArray(insufficientModal.shortages)
+                                        ? insufficientModal.shortages
+                                        : []
+                                    ).length ? (
+                                        insufficientModal.shortages.map((s, idx) => (
+                                            <div
+                                                key={`${s?.ingredientId || s?.ingredientName || "short"}-${idx}`}
+                                                className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3"
+                                            >
+                                                <div className="text-sm text-rose-900 font-medium">
+                                                    {s?.ingredientName || "(Không rõ nguyên liệu)"}
+                                                </div>
+                                                <div className="text-sm text-rose-900">
+                                                    Thiếu {s?.shortage || 0} {s?.baseUnit || ""}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-gray-500">Không có dữ liệu.</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-8 pb-10">
+                            <button
+                                type="button"
+                                onClick={closeInsufficientModal}
+                                className="w-full h-16 rounded-2xl bg-blue-600 text-white text-xl font-semibold hover:bg-blue-700"
+                            >
+                                Đã hiểu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {cancelModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

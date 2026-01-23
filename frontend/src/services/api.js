@@ -13,7 +13,7 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = sessionStorage.getItem(STORAGE_KEY);
             if (raw) {
                 const auth = JSON.parse(raw);
                 const token = auth?.token;
@@ -44,6 +44,14 @@ export const getProducts = async (categoryId = null, search = "") => {
         params.search = search;
     }
     const response = await api.get("/products", { params });
+    return response.data;
+};
+
+export const getProductsAvailability = async (productIds = [], cartItems = []) => {
+    const response = await api.post("/products/availability", {
+        productIds,
+        cartItems,
+    });
     return response.data;
 };
 
@@ -84,6 +92,11 @@ export const getIngredients = async (search = "") => {
     return response.data;
 };
 
+export const getToppings = async () => {
+    const response = await api.get("/toppings");
+    return response.data;
+};
+
 export const createIngredient = async (data) => {
     const response = await api.post("/ingredients", data);
     return response.data;
@@ -111,6 +124,11 @@ export const upsertRecipeByProduct = async (productId, items) => {
 
 export const deleteRecipeByProduct = async (productId) => {
     const response = await api.delete(`/recipes/product/${productId}`);
+    return response.data;
+};
+
+export const setRecipeActiveByProduct = async (productId, isActive) => {
+    const response = await api.patch(`/recipes/product/${productId}/active`, { isActive });
     return response.data;
 };
 

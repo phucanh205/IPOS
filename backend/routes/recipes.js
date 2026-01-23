@@ -26,6 +26,33 @@ router.get("/product/:productId", async (req, res) => {
     }
 });
 
+router.patch("/product/:productId/active", async (req, res) => {
+    try {
+        const { productId } = req.params || {};
+        const { isActive } = req.body || {};
+
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).json({ error: "Invalid productId" });
+        }
+
+        const nextActive = Boolean(isActive);
+
+        const updated = await Recipe.findOneAndUpdate(
+            { product: productId },
+            { $set: { isActive: nextActive, updatedAt: Date.now() } },
+            { new: true }
+        ).populate("items.ingredient", "name unit baseUnit displayUnit conversionFactor");
+
+        if (!updated) {
+            return res.status(404).json({ error: "Recipe not found" });
+        }
+
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.put("/product/:productId", async (req, res) => {
     try {
         const { productId } = req.params || {};
@@ -55,7 +82,17 @@ router.put("/product/:productId", async (req, res) => {
 
         const upserted = await Recipe.findOneAndUpdate(
             { product: productId },
-            { product: productId, items: normalizedItems, updatedAt: Date.now() },
+            {
+                $set: {
+                    items: normalizedItems,
+                    isActive: true,
+                    updatedAt: Date.now(),
+                },
+                $setOnInsert: {
+                    product: productId,
+                    createdAt: Date.now(),
+                },
+            },
             { new: true, upsert: true, runValidators: true }
         ).populate("items.ingredient", "name unit baseUnit displayUnit conversionFactor");
 

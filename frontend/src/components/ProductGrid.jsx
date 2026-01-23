@@ -1,4 +1,4 @@
-function ProductGrid({ products, loading, onProductClick }) {
+function ProductGrid({ products, loading, onProductClick, availabilityByProductId }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -26,12 +26,19 @@ function ProductGrid({ products, loading, onProductClick }) {
 
     return (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 content-start">
-            {products.map((product) => (
+            {products.map((product) => {
+                const pid = product?._id;
+                const avail = pid ? availabilityByProductId?.[pid] : null;
+                const disabled = avail ? avail.canAdd === false : false;
+                return (
                 <button
                     type="button"
                     key={product._id}
+                    disabled={disabled}
                     onClick={() => onProductClick(product)}
-                    className="group bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left"
+                    className={`group bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left ${
+                        disabled ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
                 >
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         <img
@@ -46,6 +53,18 @@ function ProductGrid({ products, loading, onProductClick }) {
                                     "https://via.placeholder.com/200";
                             }}
                         />
+
+                        {disabled && (
+                            <div className="absolute inset-0">
+                                <div className="absolute inset-0 bg-white/55" />
+                                <div className="absolute inset-0 flex items-center justify-center px-3">
+                                    <div className="text-center text-2xl font-semibold text-gray-900">
+                                        Nguyên liệu tạm hết
+                                    </div>
+                                </div>
+                                <div className="absolute left-[-50%] top-1/2 w-[200%] h-[3px] bg-black/40 -rotate-45" />
+                            </div>
+                        )}
                     </div>
                     <div className="p-3">
                         <div className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.25rem]">
@@ -57,11 +76,14 @@ function ProductGrid({ products, loading, onProductClick }) {
                             </span>
                             <button
                                 type="button"
+                                disabled={disabled}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onProductClick(product);
                                 }}
-                                className="h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-900 inline-flex items-center justify-center transition-colors"
+                                className={`h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-900 inline-flex items-center justify-center transition-colors ${
+                                    disabled ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
                                 title="Thêm vào giỏ"
                             >
                                 <svg
@@ -81,7 +103,8 @@ function ProductGrid({ products, loading, onProductClick }) {
                         </div>
                     </div>
                 </button>
-            ))}
+                );
+            })}
         </div>
     );
 }

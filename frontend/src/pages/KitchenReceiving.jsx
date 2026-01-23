@@ -13,6 +13,7 @@ function KitchenReceiving() {
     const [notesById, setNotesById] = useState({});
     const [noteModal, setNoteModal] = useState({ open: false, row: null, value: "" });
     const [dailyPage, setDailyPage] = useState(1);
+    const [hiddenIds, setHiddenIds] = useState({});
 
     const DAILY_PAGE_SIZE = 8;
 
@@ -91,12 +92,17 @@ function KitchenReceiving() {
         });
     };
 
-    const dailyTotal = Array.isArray(daily) ? daily.length : 0;
+    const visibleDaily = useMemo(() => {
+        const list = Array.isArray(daily) ? daily : [];
+        return list.filter((r) => !hiddenIds?.[r?._id]);
+    }, [daily, hiddenIds]);
+
+    const dailyTotal = visibleDaily.length;
     const dailyTotalPages = Math.max(1, Math.ceil(dailyTotal / DAILY_PAGE_SIZE));
     const dailyPageSafe = Math.min(Math.max(1, dailyPage), dailyTotalPages);
     const dailyStartIdx = dailyTotal === 0 ? 0 : (dailyPageSafe - 1) * DAILY_PAGE_SIZE;
     const dailyEndIdxExclusive = Math.min(dailyStartIdx + DAILY_PAGE_SIZE, dailyTotal);
-    const dailySlice = dailyTotal === 0 ? [] : daily.slice(dailyStartIdx, dailyEndIdxExclusive);
+    const dailySlice = dailyTotal === 0 ? [] : visibleDaily.slice(dailyStartIdx, dailyEndIdxExclusive);
 
     useEffect(() => {
         if (dailyPage > dailyTotalPages) {
@@ -137,10 +143,7 @@ function KitchenReceiving() {
             const nextReceived = {};
             [...(payload?.daily || []), ...(payload?.other || [])].forEach((r) => {
                 if (!r?._id) return;
-                nextReceived[r._id] =
-                    r?.suggestedQty === undefined || r?.suggestedQty === null
-                        ? ""
-                        : String(r.suggestedQty);
+                nextReceived[r._id] = "0";
             });
             setReceivedById(nextReceived);
         } catch (e) {
@@ -160,18 +163,73 @@ function KitchenReceiving() {
         if (confirming) return;
 
         const rows = [...(daily || []), ...(other || [])];
-        const items = rows
-            .map((r) => ({
-                ingredientId: r?._id,
-                receivedQty: receivedById?.[r?._id],
-                suggestedQty: r?.suggestedQty,
-                note: notesById?.[r?._id] || "",
-            }))
-            .filter((x) => x.ingredientId);
+        const missing = [];
+        const normalizedRows = rows
+            .map((r) => {
+                const ingredientId = r?._id;
+                if (!ingredientId) return null;
+                const raw = receivedById?.[ingredientId];
+                const note = notesById?.[ingredientId] || "";
+                if (raw === undefined || raw === null || raw === "") {
+                    missing.push(r?.name || "");
+                    return null;
+                }
+                const qty = Number(raw);
+                if (!Number.isFinite(qty) || qty < 0) {
+                    missing.push(r?.name || "");
+                    return null;
+                }
+                return {
+                    ingredientId,
+                    receivedQty: qty,
+                    suggestedQty: r?.suggestedQty,
+                    note,
+                    name: r?.name || "",
+                };
+            })
+            .filter(Boolean);
+
+        if (missing.length > 0) {
+            alert("Vui lòng nhập SL thực nhận hợp lệ cho: " + missing.filter(Boolean).slice(0, 5).join(", "));
+            return;
+        }
+
+        const hasAnyPositive = normalizedRows.some((x) => Number(x.receivedQty) > 0);
+        if (!hasAnyPositive) {
+            alert("Vui lòng nhập ít nhất 1 nguyên liệu có SL thực nhận > 0");
+            return;
+        }
+
+        const submittedIds = normalizedRows
+            .filter((x) => Number(x.receivedQty) > 0)
+            .map((x) => String(x.ingredientId));
+
+        const items = normalizedRows.map((x) => ({
+            ingredientId: x.ingredientId,
+            receivedQty: x.receivedQty,
+            suggestedQty: x.suggestedQty,
+            note: x.note,
+        }));
 
         setConfirming(true);
         try {
             await api.post("/kitchen/receiving-confirm", { items });
+            const reset = {};
+            rows.forEach((r) => {
+                if (!r?._id) return;
+                reset[r._id] = "0";
+            });
+            setReceivedById(reset);
+            setNotesById({});
+            if (submittedIds.length > 0) {
+                setHiddenIds((prev) => {
+                    const next = { ...(prev || {}) };
+                    submittedIds.forEach((id) => {
+                        next[id] = true;
+                    });
+                    return next;
+                });
+            }
             await loadTasks();
         } catch (e) {
             console.error(e);
@@ -415,7 +473,7 @@ function KitchenReceiving() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        other.map((row) => {
+                                        other.filter((r) => !hiddenIds?.[r?._id]).map((row) => {
                                             const received = receivedById[row._id];
                                             const status = calcStatus(row?.suggestedQty, received);
                                             const hasNote = !!String(notesById[row._id] || "").trim();

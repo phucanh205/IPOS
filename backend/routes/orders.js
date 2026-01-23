@@ -1,8 +1,152 @@
 import express from "express";
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
+import Ingredient from "../models/Ingredient.js";
+import Recipe from "../models/Recipe.js";
 import { getIO } from "../socket.js";
 
 const router = express.Router();
+
+const safeNumber = (v, fallback = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+};
+
+const buildIngredientRequirementsFromItems = async (items, session) => {
+    const list = Array.isArray(items) ? items : [];
+    const productIds = list
+        .map((it) => it?.productId)
+        .filter(Boolean)
+        .map((id) => String(id));
+
+    if (!productIds.length) {
+        return { requiredItems: [], shortages: [], missingRecipes: [] };
+    }
+
+    let recipeQuery = Recipe.find({ product: { $in: productIds }, isActive: true });
+    if (session) recipeQuery = recipeQuery.session(session);
+    const recipes = await recipeQuery;
+    const recipeByProductId = new Map(recipes.map((r) => [String(r.product), r]));
+
+    const missingRecipes = [];
+    for (const it of list) {
+        const pid = it?.productId ? String(it.productId) : "";
+        if (!pid) continue;
+        if (!recipeByProductId.has(pid)) {
+            missingRecipes.push({
+                productId: pid,
+                productName: String(it?.productName || "").trim(),
+            });
+        }
+    }
+
+    const requiredByIngredientId = new Map();
+    for (const it of list) {
+        const pid = it?.productId ? String(it.productId) : "";
+        if (!pid) continue;
+        const recipe = recipeByProductId.get(pid);
+        if (!recipe) continue;
+
+        const itemQty = safeNumber(it?.quantity, 0);
+        if (!itemQty || itemQty <= 0) continue;
+
+        const recipeItems = Array.isArray(recipe?.items) ? recipe.items : [];
+        for (const ri of recipeItems) {
+            const ingId = ri?.ingredient ? String(ri.ingredient) : "";
+            if (!ingId) continue;
+            const perProduct = safeNumber(ri?.quantity, 0);
+            if (!perProduct || perProduct <= 0) continue;
+            const need = perProduct * itemQty;
+            requiredByIngredientId.set(
+                ingId,
+                safeNumber(requiredByIngredientId.get(ingId), 0) + need
+            );
+        }
+    }
+
+    const ingIds = [...requiredByIngredientId.keys()];
+    if (!ingIds.length) {
+        return { requiredItems: [], shortages: [], missingRecipes };
+    }
+
+    let ingQuery = Ingredient.find({ _id: { $in: ingIds } }).select(
+        "name stockOnHand baseUnit"
+    );
+    if (session) ingQuery = ingQuery.session(session);
+    const ingredients = await ingQuery;
+    const ingById = new Map(ingredients.map((i) => [String(i._id), i]));
+
+    const requiredItems = ingIds.map((id) => ({
+        ingredientId: id,
+        quantity: safeNumber(requiredByIngredientId.get(id), 0),
+    }));
+
+    const shortages = [];
+    for (const reqItem of requiredItems) {
+        const ing = ingById.get(String(reqItem.ingredientId));
+        const available = safeNumber(ing?.stockOnHand, 0);
+        const required = safeNumber(reqItem?.quantity, 0);
+        if (required > available) {
+            shortages.push({
+                ingredientId: String(reqItem.ingredientId),
+                ingredientName: String(ing?.name || "").trim(),
+                baseUnit: String(ing?.baseUnit || "").trim(),
+                required,
+                available,
+                shortage: required - available,
+            });
+        }
+    }
+
+    return { requiredItems, shortages, missingRecipes };
+};
+
+const applyDeduction = async ({ requiredItems, session }) => {
+    const deducted = [];
+    for (const reqItem of requiredItems) {
+        const qty = safeNumber(reqItem?.quantity, 0);
+        if (!qty || qty <= 0) continue;
+
+        const filter = {
+            _id: reqItem.ingredientId,
+            stockOnHand: { $gte: qty },
+        };
+        const update = { $inc: { stockOnHand: -qty } };
+
+        let q = Ingredient.updateOne(filter, update);
+        if (session) q = q.session(session);
+        const r = await q;
+        if (!r?.modifiedCount) {
+            const rollbackOps = deducted.map((d) => {
+                let rq = Ingredient.updateOne(
+                    { _id: d.ingredientId },
+                    { $inc: { stockOnHand: d.quantity } }
+                );
+                if (session) rq = rq.session(session);
+                return rq;
+            });
+            await Promise.all(rollbackOps);
+            const err = new Error("INSUFFICIENT_INGREDIENTS");
+            err.code = "INSUFFICIENT_INGREDIENTS";
+            throw err;
+        }
+
+        deducted.push({ ingredientId: reqItem.ingredientId, quantity: qty });
+    }
+
+    return deducted;
+};
+
+const isTransactionNotSupportedError = (e) => {
+    const msg = String(e?.message || "");
+    return (
+        msg.includes(
+            "Transaction numbers are only allowed on a replica set member or mongos"
+        ) ||
+        msg.toLowerCase().includes("replica set") ||
+        msg.toLowerCase().includes("mongos")
+    );
+};
 
 // Get all orders
 router.get("/", async (req, res) => {
@@ -123,8 +267,120 @@ router.post("/", async (req, res) => {
             sentToKitchenAt: new Date(),
         });
 
-        const savedOrder = await order.save();
-        const populatedOrder = await Order.findById(savedOrder._id).populate(
+        const handleRecipeMissing = (missingRecipes) => {
+            return res.status(409).json({
+                error: "Missing recipe for product",
+                code: "RECIPE_MISSING",
+                missingRecipes: Array.isArray(missingRecipes) ? missingRecipes : [],
+            });
+        };
+
+        const handleInsufficient = (shortages) => {
+            return res.status(409).json({
+                error: "Insufficient ingredients",
+                code: "INSUFFICIENT_INGREDIENTS",
+                shortages: Array.isArray(shortages) ? shortages : [],
+            });
+        };
+
+        let session;
+        let usedTransaction = false;
+
+        try {
+            session = await mongoose.startSession();
+            usedTransaction = true;
+            await session.withTransaction(async () => {
+                const { requiredItems, shortages, missingRecipes } =
+                    await buildIngredientRequirementsFromItems(order.items, session);
+
+                if (missingRecipes.length) {
+                    const err = new Error("RECIPE_MISSING");
+                    err.code = "RECIPE_MISSING";
+                    err.payload = { missingRecipes };
+                    throw err;
+                }
+
+                if (shortages.length) {
+                    const err = new Error("INSUFFICIENT_INGREDIENTS");
+                    err.code = "INSUFFICIENT_INGREDIENTS";
+                    err.payload = { shortages };
+                    throw err;
+                }
+
+                await applyDeduction({ requiredItems, session });
+
+                order.ingredientsDeductedAt = new Date();
+                order.ingredientsDeductedBy = "";
+                order.ingredientsDeductedItems = requiredItems
+                    .filter((x) => safeNumber(x?.quantity, 0) > 0)
+                    .map((x) => ({
+                        ingredient: x.ingredientId,
+                        quantity: safeNumber(x?.quantity, 0),
+                    }));
+                order.ingredientsRestockedAt = null;
+                order.ingredientsRestockedBy = "";
+
+                await order.save({ session });
+            });
+        } catch (e) {
+            if (usedTransaction && isTransactionNotSupportedError(e)) {
+                // Fallback for standalone MongoDB (no replica set): do it without transaction/session.
+                const { requiredItems, shortages, missingRecipes } =
+                    await buildIngredientRequirementsFromItems(order.items, null);
+
+                if (missingRecipes.length) {
+                    return handleRecipeMissing(missingRecipes);
+                }
+
+                if (shortages.length) {
+                    return handleInsufficient(shortages);
+                }
+
+                try {
+                    await applyDeduction({ requiredItems, session: null });
+                } catch (e2) {
+                    if (String(e2?.code || "") === "INSUFFICIENT_INGREDIENTS") {
+                        const { shortages: nextShortages } =
+                            await buildIngredientRequirementsFromItems(order.items, null);
+                        return handleInsufficient(nextShortages);
+                    }
+                    throw e2;
+                }
+
+                order.ingredientsDeductedAt = new Date();
+                order.ingredientsDeductedBy = "";
+                order.ingredientsDeductedItems = requiredItems
+                    .filter((x) => safeNumber(x?.quantity, 0) > 0)
+                    .map((x) => ({
+                        ingredient: x.ingredientId,
+                        quantity: safeNumber(x?.quantity, 0),
+                    }));
+                order.ingredientsRestockedAt = null;
+                order.ingredientsRestockedBy = "";
+
+                await order.save();
+            }
+
+            if (String(e?.code || "") === "RECIPE_MISSING") {
+                return handleRecipeMissing(e?.payload?.missingRecipes);
+            }
+
+            if (String(e?.code || "") === "INSUFFICIENT_INGREDIENTS") {
+                return handleInsufficient(e?.payload?.shortages);
+            }
+
+            throw e;
+        } finally {
+            if (session) {
+                try {
+                    await session.endSession();
+                } catch {
+                    // ignore
+                }
+            }
+        }
+
+        const populatedOrder = await Order.findById(order._id).populate(
             "items.productId",
             "name image"
         );

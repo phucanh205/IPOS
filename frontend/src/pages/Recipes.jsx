@@ -7,6 +7,7 @@ import {
     getIngredients,
     getProducts,
     getRecipeByProduct,
+    setRecipeActiveByProduct,
     upsertRecipeByProduct,
 } from "../services/api";
 
@@ -59,6 +60,9 @@ function Recipes() {
 
     const [recipeDraftByProduct, setRecipeDraftByProduct] = useState({});
     const [editingRecipeForProductId, setEditingRecipeForProductId] = useState(null);
+
+    const [recipeExistsByProduct, setRecipeExistsByProduct] = useState({});
+    const [recipeActiveByProduct, setRecipeActiveByProductState] = useState({});
 
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pickerSearch, setPickerSearch] = useState("");
@@ -198,10 +202,17 @@ function Recipes() {
                             : "",
                 })) || [];
             setRecipeDraftByProduct((prev) => ({ ...prev, [productId]: rows }));
+            setRecipeExistsByProduct((prev) => ({ ...prev, [productId]: true }));
+            setRecipeActiveByProductState((prev) => ({
+                ...prev,
+                [productId]: recipe?.isActive === false ? false : true,
+            }));
         } catch (error) {
             const status = error?.response?.status;
             if (status === 404) {
                 setRecipeDraftByProduct((prev) => ({ ...prev, [productId]: [] }));
+                setRecipeExistsByProduct((prev) => ({ ...prev, [productId]: false }));
+                setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: false }));
             } else {
                 console.error("Error loading recipe:", error);
             }
@@ -276,8 +287,9 @@ function Recipes() {
     }, [recipeDraftByProduct, selectedProductId]);
 
     const isSelectedProductRecipeAttached = useMemo(() => {
-        return Array.isArray(currentRecipeRows) && currentRecipeRows.length > 0;
-    }, [currentRecipeRows]);
+        if (!selectedProductId) return false;
+        return !!recipeExistsByProduct?.[selectedProductId] && !!recipeActiveByProduct?.[selectedProductId];
+    }, [recipeActiveByProduct, recipeExistsByProduct, selectedProductId]);
 
     const canSaveRecipe = useMemo(() => {
         if (!editingRecipeForProductId) return false;
@@ -320,24 +332,56 @@ function Recipes() {
         setPickerIngredients([]);
     };
 
-    const setRecipeAttached = (productId, attached) => {
+    const setRecipeAttached = async (productId, attached) => {
         if (!productId) return;
 
+        // Ensure we know whether recipe exists
+        if (recipeDraftByProduct?.[productId] === undefined) {
+            await loadRecipeByProduct(productId);
+        }
+
+        const exists = !!recipeExistsByProduct?.[productId];
+
+        // Turn ON:
+        // - if recipe exists -> activate it
+        // - if no recipe -> open editor to create
         if (attached) {
-            loadRecipeByProduct(productId);
+            if (!exists) {
+                openRecipeEditor(productId);
+                return;
+            }
+
+            try {
+                await setRecipeActiveByProduct(productId, true);
+                setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: true }));
+            } catch (error) {
+                console.error("Error enabling recipe:", error);
+                alert(
+                    error?.response?.data?.error ||
+                        "Không thể bật công thức. Vui lòng thử lại."
+                );
+            }
             return;
         }
 
-        deleteRecipeByProduct(productId)
-            .then(() => {
-                setRecipeDraftByProduct((prev) => ({ ...prev, [productId]: [] }));
+        // Turn OFF: if recipe exists, mark inactive (do not delete)
+        if (exists) {
+            try {
+                await setRecipeActiveByProduct(productId, false);
+                setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: false }));
                 if (editingRecipeForProductId === productId) {
                     closeRecipeEditor();
                 }
-            })
-            .catch((error) => {
-                console.error("Error deleting recipe:", error);
-            });
+            } catch (error) {
+                console.error("Error disabling recipe:", error);
+                alert(
+                    error?.response?.data?.error ||
+                        "Không thể tắt công thức. Vui lòng thử lại."
+                );
+            }
+        } else {
+            setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: false }));
+        }
     };
 
     const openPicker = async () => {
@@ -422,10 +466,11 @@ function Recipes() {
     const handleSaveRecipe = () => {
         if (!canSaveRecipe) return;
 
-        const rows = recipeDraftByProduct?.[editingRecipeForProductId] || [];
+        const productId = editingRecipeForProductId;
+        const rows = recipeDraftByProduct?.[productId] || [];
 
         if (!rows.length) {
-            deleteRecipeByProduct(editingRecipeForProductId)
+            deleteRecipeByProduct(productId)
                 .catch((error) => {
                     const status = error?.response?.status;
                     if (status !== 404) {
@@ -440,8 +485,10 @@ function Recipes() {
                 .finally(() => {
                     setRecipeDraftByProduct((prev) => ({
                         ...prev,
-                        [editingRecipeForProductId]: [],
+                        [productId]: [],
                     }));
+                    setRecipeExistsByProduct((prev) => ({ ...prev, [productId]: false }));
+                    setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: false }));
                     closeRecipeEditor();
                 });
             return;
@@ -452,7 +499,7 @@ function Recipes() {
             quantity: Number(r.quantity),
         }));
 
-        upsertRecipeByProduct(editingRecipeForProductId, items)
+        upsertRecipeByProduct(productId, items)
             .then((recipe) => {
                 const nextRows =
                     recipe?.items?.map((it) => ({
@@ -466,8 +513,10 @@ function Recipes() {
                     })) || [];
                 setRecipeDraftByProduct((prev) => ({
                     ...prev,
-                    [editingRecipeForProductId]: nextRows,
+                    [productId]: nextRows,
                 }));
+                setRecipeExistsByProduct((prev) => ({ ...prev, [productId]: true }));
+                setRecipeActiveByProductState((prev) => ({ ...prev, [productId]: true }));
                 closeRecipeEditor();
             })
             .catch((error) => {
@@ -696,9 +745,13 @@ function Recipes() {
                                                     const loaded =
                                                         recipeDraftByProduct?.[p._id] !==
                                                         undefined;
-                                                    const attached =
-                                                        (recipeDraftByProduct?.[p._id] || [])
-                                                            .length > 0;
+                                                    const exists = loaded
+                                                        ? !!recipeExistsByProduct?.[p._id]
+                                                        : false;
+                                                    const attached = loaded
+                                                        ? exists && !!recipeActiveByProduct?.[p._id]
+                                                        : false;
+                                                    const hasRecipe = loaded ? exists : false;
                                                     return (
                                                         <tr
                                                             key={p._id}
@@ -764,6 +817,8 @@ function Recipes() {
                                                                             ? "Đang tải..."
                                                                             : attached
                                                                             ? "Gắn / sửa công thức"
+                                                                            : hasRecipe
+                                                                            ? "Bật lại / sửa công thức"
                                                                             : "Gắn công thức"}
                                                                     </button>
                                                                 </div>

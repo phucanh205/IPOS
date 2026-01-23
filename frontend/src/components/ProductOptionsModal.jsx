@@ -1,21 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getToppings } from "../services/api";
 
 const SIZE_OPTIONS = [
     { id: "regular", label: "Vừa", extra: 0 },
     { id: "large", label: "Lớn", extra: 10000 },
 ];
 
-const TOPPING_OPTIONS = [
-    { id: "extra-cheese", label: "Thêm phô mai", extra: 10000 },
-    { id: "crispy-bacon", label: "Thịt xông khói", extra: 10000 },
-    { id: "fried-egg", label: "Trứng chiên", extra: 10000 },
-];
+const TOPPING_PRICE = 10000;
 
 function ProductOptionsModal({ open, item, onClose, onSave }) {
     const [size, setSize] = useState("regular");
     const [toppings, setToppings] = useState([]);
     const [notes, setNotes] = useState("");
     const [quantity, setQuantity] = useState(1);
+    const [toppingOptions, setToppingOptions] = useState([]);
+
+    const visibleToppingOptions = useMemo(() => {
+        const set = new Set((toppingOptions || []).map((x) => x.id));
+        const existing = Array.isArray(toppings) ? toppings : [];
+        const extras = existing
+            .filter((x) => x && !set.has(x))
+            .map((x) => ({ id: x, label: x, extra: TOPPING_PRICE }));
+        return [...(toppingOptions || []), ...extras];
+    }, [toppingOptions, toppings]);
 
     useEffect(() => {
         if (item && open) {
@@ -25,6 +32,26 @@ function ProductOptionsModal({ open, item, onClose, onSave }) {
             setQuantity(item.quantity || 1);
         }
     }, [item, open]);
+
+    useEffect(() => {
+        if (!open) return;
+        getToppings()
+            .then((res) => {
+                const list = Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
+                const normalized = list
+                    .map((x) => ({
+                        id: String(x?.name || "").trim(),
+                        label: String(x?.name || "").trim(),
+                        extra: TOPPING_PRICE,
+                    }))
+                    .filter((x) => x.id);
+                setToppingOptions(normalized);
+            })
+            .catch((e) => {
+                console.error(e);
+                setToppingOptions([]);
+            });
+    }, [open]);
 
     if (!open || !item) return null;
 
@@ -40,10 +67,7 @@ function ProductOptionsModal({ open, item, onClose, onSave }) {
 
     const calculateTotal = () => {
         const sizeExtra = SIZE_OPTIONS.find((s) => s.id === size)?.extra ?? 0;
-        const toppingExtra = toppings.reduce((sum, id) => {
-            const top = TOPPING_OPTIONS.find((t) => t.id === id);
-            return sum + (top?.extra ?? 0);
-        }, 0);
+        const toppingExtra = (Array.isArray(toppings) ? toppings.length : 0) * TOPPING_PRICE;
         const unit = item.product.price + sizeExtra + toppingExtra;
         return unit * quantity;
     };
@@ -54,9 +78,7 @@ function ProductOptionsModal({ open, item, onClose, onSave }) {
     const handleSave = () => {
         const sizeLabel =
             SIZE_OPTIONS.find((s) => s.id === size)?.label || "Vừa";
-        const toppingLabels = TOPPING_OPTIONS.filter((t) =>
-            toppings.includes(t.id)
-        ).map((t) => t.label);
+        const toppingLabels = Array.isArray(toppings) ? toppings : [];
 
         onSave({
             ...item,
@@ -132,7 +154,10 @@ function ProductOptionsModal({ open, item, onClose, onSave }) {
                             </span>
                         </div>
                         <div className="space-y-2">
-                            {TOPPING_OPTIONS.map((topping) => {
+                            {visibleToppingOptions.length === 0 ? (
+                                <div className="text-xs text-gray-500">Chưa có topping.</div>
+                            ) : (
+                                visibleToppingOptions.map((topping) => {
                                 const checked = toppings.includes(topping.id);
                                 return (
                                     <label
@@ -155,7 +180,8 @@ function ProductOptionsModal({ open, item, onClose, onSave }) {
                                         </span>
                                     </label>
                                 );
-                            })}
+                                })
+                            )}
                         </div>
                     </div>
 

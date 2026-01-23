@@ -121,6 +121,41 @@ const orderSchema = new mongoose.Schema({
     kitchenRejectionReason: {
         type: String, // Lý do từ chối
     },
+    ingredientsDeductedAt: {
+        type: Date,
+        default: null,
+    },
+    ingredientsDeductedBy: {
+        type: String,
+        default: "",
+        trim: true,
+    },
+    ingredientsDeductedItems: {
+        type: [
+            {
+                ingredient: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Ingredient",
+                    required: true,
+                },
+                quantity: {
+                    type: Number,
+                    required: true,
+                    min: 0,
+                },
+            },
+        ],
+        default: [],
+    },
+    ingredientsRestockedAt: {
+        type: Date,
+        default: null,
+    },
+    ingredientsRestockedBy: {
+        type: String,
+        default: "",
+        trim: true,
+    },
     // Order lifecycle timestamps
     sentToKitchenAt: {
         type: Date,

@@ -10,11 +10,40 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check if user is logged in from localStorage immediately
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
-        const savedAuth = localStorage.getItem(STORAGE_KEY);
+        const savedAuth = sessionStorage.getItem(STORAGE_KEY);
         if (savedAuth) {
-          setAuth(JSON.parse(savedAuth));
+          const parsed = JSON.parse(savedAuth);
+          setAuth(parsed);
+
+          const token = parsed?.token;
+          const role = parsed?.user?.role;
+
+          if (token && !role) {
+            try {
+              const res = await fetch('/api/auth/me', {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (res.ok) {
+                const user = await res.json();
+                const next = { ...parsed, user };
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+                setAuth(next);
+              } else if (res.status === 401) {
+                sessionStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem('pos_user');
+                setAuth(null);
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
           return;
         }
 
@@ -39,7 +68,8 @@ export function AuthProvider({ children }) {
           ? { user: { username: authPayload }, token: null }
           : authPayload;
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('pos_user');
       setAuth(normalized);
     } catch (error) {
@@ -49,6 +79,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     try {
+      sessionStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('pos_user');
       setAuth(null);
