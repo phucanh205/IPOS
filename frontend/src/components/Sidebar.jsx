@@ -38,22 +38,22 @@ function Sidebar() {
 
     const cashierMenuItems = [
         {
-            icon: "▦",
+
             label: "POS",
             path: "/home",
         },
         {
-            icon: "🍔",
+
             label: "Danh sách sản phẩm",
             path: "/products",
         },
         {
-            icon: "💰",
+    
             label: "Đơn hàng tạm giữ",
             path: "/held-orders",
         },
         {
-            icon: "🧾",
+
             label: "Lịch sử hóa đơn",
             path: "/orders",
         },

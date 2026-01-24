@@ -163,22 +163,15 @@ function KitchenReceiving() {
         if (confirming) return;
 
         const rows = [...(daily || []), ...(other || [])];
-        const missing = [];
         const normalizedRows = rows
             .map((r) => {
                 const ingredientId = r?._id;
                 if (!ingredientId) return null;
                 const raw = receivedById?.[ingredientId];
                 const note = notesById?.[ingredientId] || "";
-                if (raw === undefined || raw === null || raw === "") {
-                    missing.push(r?.name || "");
-                    return null;
-                }
-                const qty = Number(raw);
-                if (!Number.isFinite(qty) || qty < 0) {
-                    missing.push(r?.name || "");
-                    return null;
-                }
+
+                const qty = raw === undefined || raw === null || raw === "" ? 0 : Number(raw);
+                if (!Number.isFinite(qty) || qty < 0) return null;
                 return {
                     ingredientId,
                     receivedQty: qty,
@@ -189,20 +182,7 @@ function KitchenReceiving() {
             })
             .filter(Boolean);
 
-        if (missing.length > 0) {
-            alert("Vui lòng nhập SL thực nhận hợp lệ cho: " + missing.filter(Boolean).slice(0, 5).join(", "));
-            return;
-        }
-
-        const hasAnyPositive = normalizedRows.some((x) => Number(x.receivedQty) > 0);
-        if (!hasAnyPositive) {
-            alert("Vui lòng nhập ít nhất 1 nguyên liệu có SL thực nhận > 0");
-            return;
-        }
-
-        const submittedIds = normalizedRows
-            .filter((x) => Number(x.receivedQty) > 0)
-            .map((x) => String(x.ingredientId));
+        const submittedIds = normalizedRows.map((x) => String(x.ingredientId));
 
         const items = normalizedRows.map((x) => ({
             ingredientId: x.ingredientId,

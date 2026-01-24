@@ -196,6 +196,21 @@ router.get("/receiving-tasks", async (req, res) => {
         const todayStart = startOfDay(baseDate);
         const todayEnd = endOfDay(baseDate);
 
+        const receivingSessions = await ReceivingLog.find({
+            receivedAt: { $gte: todayStart, $lte: todayEnd },
+        }).select("items");
+
+        const receivedTodaySet = new Set();
+        for (const s of receivingSessions) {
+            const items = Array.isArray(s?.items) ? s.items : [];
+            for (const it of items) {
+                const ingId = String(it?.ingredientId || "").trim();
+                if (ingId) {
+                    receivedTodaySet.add(ingId);
+                }
+            }
+        }
+
         const ingredients = await Ingredient.find({}).sort({ name: 1 });
 
         const reportedAlerts = await LowStockAlert.find({ status: "reported" }).select(
@@ -209,6 +224,10 @@ router.get("/receiving-tasks", async (req, res) => {
         const other = [];
 
         for (const ing of ingredients) {
+            if (receivedTodaySet.has(String(ing?._id))) {
+                continue;
+            }
+
             const rule = String(ing?.issueRule || "").trim();
             const displayUnit = String(ing?.displayUnit || ing?.unit || "").trim();
             const factor = safeNumber(ing?.conversionFactor, 1);
