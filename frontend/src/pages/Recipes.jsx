@@ -816,7 +816,7 @@ function Recipes() {
                                                                         {!loaded
                                                                             ? "Đang tải..."
                                                                             : attached
-                                                                            ? "Gắn / sửa công thức"
+                                                                            ? "Sửa công thức"
                                                                             : hasRecipe
                                                                             ? "Bật lại / sửa công thức"
                                                                             : "Gắn công thức"}
