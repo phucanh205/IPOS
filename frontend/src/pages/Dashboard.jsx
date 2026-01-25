@@ -195,7 +195,6 @@ function Dashboard() {
                                 <h3 className="text-sm font-semibold text-gray-600">
                                     Doanh thu
                                 </h3>
-                                <span className="text-lg">💰</span>
                             </div>
                             <div className="text-3xl font-bold text-gray-900 mb-2">
                                 {formatPrice(stats.revenue.today)}₫
@@ -220,7 +219,6 @@ function Dashboard() {
                                 <h3 className="text-sm font-semibold text-gray-600">
                                     Đơn hàng
                                 </h3>
-                                <span className="text-lg">🛒</span>
                             </div>
                             <div className="text-3xl font-bold text-gray-900 mb-2">
                                 {stats.orders.today}

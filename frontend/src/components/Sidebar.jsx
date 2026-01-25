@@ -90,7 +90,6 @@ function Sidebar() {
                                     : "text-gray-300 hover:bg-gray-800 hover:text-white"
                             }`}
                         >
-                            <span className="text-lg">{item.icon}</span>
                             <span className="font-medium">{item.label}</span>
                         </button>
                     );
@@ -124,7 +123,6 @@ function Sidebar() {
                                             : "text-gray-300 hover:bg-gray-800 hover:text-white"
                                     }`}
                                 >
-                                    <span className="text-lg">🥬</span>
                                     <span className="font-medium">Nguyên liệu</span>
                                 </button>
                                 <button
@@ -136,7 +134,6 @@ function Sidebar() {
                                             : "text-gray-300 hover:bg-gray-800 hover:text-white"
                                     }`}
                                 >
-                                    <span className="text-lg">🍽️</span>
                                     <span className="font-medium">Công thức</span>
                                 </button>
                             </div>
