@@ -14,6 +14,7 @@ function KitchenReceiving() {
     const [noteModal, setNoteModal] = useState({ open: false, row: null, value: "" });
     const [dailyPage, setDailyPage] = useState(1);
     const [hiddenIds, setHiddenIds] = useState({});
+    const [errorPopup, setErrorPopup] = useState("");
 
     const DAILY_PAGE_SIZE = 8;
 
@@ -181,6 +182,23 @@ function KitchenReceiving() {
                 };
             })
             .filter(Boolean);
+
+        // Check for any negative entered values before submission
+        const negativeEntries = rows
+            .map((r) => {
+                const ingredientId = r?._id;
+                if (!ingredientId) return null;
+                const raw = receivedById?.[ingredientId];
+                const qty = raw === undefined || raw === null || raw === "" ? 0 : Number(raw);
+                return qty < 0 ? { ingredientId, name: r?.name || "", qty } : null;
+            })
+            .filter(Boolean);
+
+        if (negativeEntries.length > 0) {
+            const names = negativeEntries.map((e) => e.name).join(", ");
+            setErrorPopup(`SL thực nhận không được âm. Vui lòng sửa các nguyên liệu: ${names}`);
+            return;
+        }
 
         const submittedIds = normalizedRows.map((x) => String(x.ingredientId));
 
@@ -619,8 +637,27 @@ function KitchenReceiving() {
                     </div>
                 </div>
             )}
+
+            {/* Error Popup */}
+            {errorPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+                        <div className="text-red-600 text-lg font-semibold mb-3">Lỗi xác nhận</div>
+                        <div className="text-gray-700 text-sm mb-5">{errorPopup}</div>
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setErrorPopup("")}
+                                className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
-}
+};
 
 export default KitchenReceiving;

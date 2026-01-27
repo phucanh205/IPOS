@@ -746,20 +746,25 @@ function Recipes() {
                                                         recipeDraftByProduct?.[p._id] !==
                                                         undefined;
                                                     const exists = loaded
-                                                        ? !!recipeExistsByProduct?.[p._id]
+                                                        ? recipeExistsByProduct?.[p._id]
                                                         : false;
                                                     const attached = loaded
-                                                        ? exists && !!recipeActiveByProduct?.[p._id]
+                                                        ? recipeActiveByProduct?.[p._id]
                                                         : false;
-                                                    const hasRecipe = loaded ? exists : false;
+                                                    const hasRecipe = loaded
+                                                        ? recipeExistsByProduct?.[p._id]
+                                                        : false;
+                                                    const isRowLoading = loadingRecipes && active;
                                                     return (
                                                         <tr
                                                             key={p._id}
-                                                            className={
+                                                            className={`border-t border-gray-200 ${
                                                                 active
                                                                     ? "bg-blue-50"
+                                                                    : isRowLoading
+                                                                    ? "hover:bg-gray-50"
                                                                     : "hover:bg-gray-50"
-                                                            }
+                                                            }`}
                                                         >
                                                             <td className="px-5 py-3">
                                                                 <button
@@ -813,12 +818,12 @@ function Recipes() {
                                                                                 : ""
                                                                         }`}
                                                                     >
-                                                                        {!loaded
+                                                                        {isRowLoading
                                                                             ? "Đang tải..."
                                                                             : attached
                                                                             ? "Sửa công thức"
                                                                             : hasRecipe
-                                                                            ? "Bật lại / sửa công thức"
+                                                                            ? "Sửa công thức"
                                                                             : "Gắn công thức"}
                                                                     </button>
                                                                 </div>
