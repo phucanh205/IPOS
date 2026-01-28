@@ -12,6 +12,10 @@ const categorySchema = new mongoose.Schema({
         unique: true,
         trim: true,
     },
+    slug: {
+        type: String,
+        trim: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -42,7 +46,7 @@ categorySchema.pre("save", async function (next) {
 });
 
 // Indexes
-categorySchema.index({ slug: 1 });
+categorySchema.index({ slug: 1 }, { sparse: true });
 
 const Category = mongoose.model("Category", categorySchema);
 

@@ -243,9 +243,19 @@ function Recipes() {
 
     const defaultGroups = useMemo(() => {
         const map = new Map();
+
+        for (const c of categories || []) {
+            if (!c?._id) continue;
+            map.set(String(c._id), {
+                categoryId: String(c._id),
+                categoryName: c?.name || "",
+                products: [],
+            });
+        }
+
         for (const p of allProducts || []) {
             const cat = p?.category;
-            const catId = cat?._id;
+            const catId = cat?._id ? String(cat._id) : "";
             if (!catId) continue;
             if (!map.has(catId)) {
                 map.set(catId, {
@@ -269,7 +279,7 @@ function Recipes() {
                     String(b?.categoryName || "")
                 )
             );
-    }, [allProducts]);
+    }, [allProducts, categories]);
 
     const selectedCategory = useMemo(
         () => (categories || []).find((c) => c?._id === selectedCategoryId) || null,
@@ -579,10 +589,16 @@ function Recipes() {
                                                 {searchGroups.map((g) => {
                                                     const count = g.products.length;
                                                     const showItems = count <= 4;
+                                                    const active =
+                                                        g.categoryId === selectedCategoryId;
                                                     return (
                                                         <div
                                                             key={g.categoryId}
-                                                            className="rounded-2xl border border-gray-100 overflow-hidden"
+                                                            className={`rounded-2xl border overflow-hidden ${
+                                                                active
+                                                                    ? "border-blue-200 bg-blue-50"
+                                                                    : "border-gray-100 bg-white"
+                                                            }`}
                                                         >
                                                             <button
                                                                 type="button"
@@ -591,7 +607,11 @@ function Recipes() {
                                                                         g.categoryId
                                                                     )
                                                                 }
-                                                                className={`w-full text-left px-4 py-3 transition-colors bg-gray-50 hover:bg-gray-100`}
+                                                                className={`w-full text-left px-4 py-3 transition-colors ${
+                                                                    active
+                                                                        ? "bg-blue-100 hover:bg-blue-100"
+                                                                        : "bg-gray-50 hover:bg-gray-100"
+                                                                }`}
                                                             >
                                                                 <div className="flex items-center justify-between gap-3">
                                                                     <div className="font-semibold text-gray-900">
@@ -646,7 +666,11 @@ function Recipes() {
                                                 return (
                                                     <div
                                                         key={g.categoryId}
-                                                        className="rounded-2xl border border-gray-100 overflow-hidden"
+                                                        className={`rounded-2xl border overflow-hidden ${
+                                                            active
+                                                                ? "border-blue-200 bg-blue-50"
+                                                                : "border-gray-100 bg-white"
+                                                        }`}
                                                     >
                                                         <button
                                                             type="button"
@@ -655,7 +679,11 @@ function Recipes() {
                                                                     g.categoryId
                                                                 )
                                                             }
-                                                            className="w-full text-left px-4 py-3 transition-colors bg-gray-50 hover:bg-gray-100"
+                                                            className={`w-full text-left px-4 py-3 transition-colors ${
+                                                                active
+                                                                    ? "bg-blue-100 hover:bg-blue-100"
+                                                                    : "bg-gray-50 hover:bg-gray-100"
+                                                            }`}
                                                         >
                                                             <div className="flex items-center justify-between gap-3">
                                                                 <div className="font-semibold text-gray-900">

@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { uploadController } from "../controllers/uploadController.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,23 +52,7 @@ const upload = multer({
 });
 
 // Upload single image
-router.post('/image', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Không có file được upload' });
-    }
-
-    // Return the file path relative to the public directory
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({
-      success: true,
-      url: fileUrl,
-      filename: req.file.filename,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+router.post('/image', upload.single('image'), uploadController.uploadImage);
 
 export default router;
 

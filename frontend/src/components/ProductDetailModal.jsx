@@ -76,10 +76,11 @@ function ProductDetailModal({ open, product, onClose, onEdit, onDelete }) {
                         </div>
                     </div>
 
-                    <div className="text-xs text-gray-600 mt-2">
-                        {product.description ||
-                            "Juicy grilled beef patty, double cheese, fresh lettuce, tomato and house special sauce."}
-                    </div>
+                    {String(product.description || "").trim() ? (
+                        <div className="text-xs text-gray-600 mt-2">
+                            {product.description}
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="px-6 py-4 border-t border-gray-200 flex gap-3 text-sm">
