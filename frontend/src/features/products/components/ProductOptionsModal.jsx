@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getToppings } from "../services/api";
+import { getToppings } from "@shared/api/apiClient";
 
 const SIZE_OPTIONS = [
     { id: "regular", label: "Vừa", extra: 0 },

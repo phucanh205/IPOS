@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import DateTimeDisplay from "../components/DateTimeDisplay";
+import Sidebar from "@shared/components/Sidebar";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
 import {
     deleteRecipeByProduct,
     getCategories,
@@ -9,7 +9,7 @@ import {
     getRecipeByProduct,
     setRecipeActiveByProduct,
     upsertRecipeByProduct,
-} from "../services/api";
+} from "@shared/api/apiClient";
 
 const unitLabel = (unit) => {
     if (unit === "pcs") return "Cái";

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import api from "@shared/api/apiClient";
 
 function Kitchen() {
     const navigate = useNavigate();

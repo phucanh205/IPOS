@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
-import SearchBar from "../components/SearchBar";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import ConfirmModal from "../components/ConfirmModal";
-import { getHeldOrders, deleteHeldOrder } from "../services/api";
+import Sidebar from "@shared/components/Sidebar";
+import SearchBar from "@shared/components/SearchBar";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import ConfirmModal from "@shared/components/ConfirmModal";
+import { getHeldOrders, deleteHeldOrder } from "@shared/api/apiClient";
 
 function HeldOrders() {
     const navigate = useNavigate();

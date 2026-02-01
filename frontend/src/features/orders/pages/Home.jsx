@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
-import Sidebar from "../components/Sidebar";
-import ProductGrid from "../components/ProductGrid";
-import SearchBar from "../components/SearchBar";
-import CategoryFilters from "../components/CategoryFilters";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import OrderPanel from "../components/OrderPanel";
-import ProductOptionsModal from "../components/ProductOptionsModal";
-import HoldOrderSuccessModal from "../components/HoldOrderSuccessModal";
-import PaymentSuccessModal from "../components/PaymentSuccessModal";
-import ConfirmModal from "../components/ConfirmModal";
+import Sidebar from "@shared/components/Sidebar";
+import ProductGrid from "@features/products/components/ProductGrid";
+import SearchBar from "@shared/components/SearchBar";
+import CategoryFilters from "@features/products/components/CategoryFilters";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import OrderPanel from "@features/orders/components/OrderPanel";
+import ProductOptionsModal from "@features/products/components/ProductOptionsModal";
+import HoldOrderSuccessModal from "@features/heldOrders/components/HoldOrderSuccessModal";
+import PaymentSuccessModal from "@features/orders/components/PaymentSuccessModal";
+import ConfirmModal from "@shared/components/ConfirmModal";
 import {
     getProducts,
     getCategories,
@@ -18,7 +18,7 @@ import {
     createOrder,
     getHeldOrder,
     getProductsAvailability,
-} from "../services/api";
+} from "@shared/api/apiClient";
 
 const REJECTED_NOTIFS_STORAGE_KEY = "pos_rejected_notifs_v1";
 const REJECTED_NOTIFS_KEEP_DAYS = 14;

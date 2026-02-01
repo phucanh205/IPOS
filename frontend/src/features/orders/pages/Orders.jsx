@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import SearchBar from "../components/SearchBar";
-import DateRangePicker from "../components/DateRangePicker";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import OrderDetailModal from "../components/OrderDetailModal";
-import { getOrders } from "../services/api";
+import Sidebar from "@shared/components/Sidebar";
+import SearchBar from "@shared/components/SearchBar";
+import DateRangePicker from "@shared/components/DateRangePicker";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import OrderDetailModal from "@features/orders/components/OrderDetailModal";
+import { getOrders } from "@shared/api/apiClient";
 
 function Orders() {
     const [orders, setOrders] = useState([]);

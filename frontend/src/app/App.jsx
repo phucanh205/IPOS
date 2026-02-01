@@ -5,19 +5,19 @@ import {
     Navigate,
     useLocation,
 } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Products from "./pages/Products";
-import HeldOrders from "./pages/HeldOrders";
-import Orders from "./pages/Orders";
-import Dashboard from "./pages/Dashboard";
-import Kitchen from "./pages/Kitchen";
-import KitchenReceiving from "./pages/KitchenReceiving";
-import Ingredients from "./pages/Ingredients";
-import Recipes from "./pages/Recipes";
-import AdminReceiving from "./pages/AdminReceiving";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider, useAuth } from "@features/auth/context/AuthContext";
+import Login from "@features/auth/pages/Login";
+import Home from "@features/orders/pages/Home";
+import Products from "@features/products/pages/Products";
+import HeldOrders from "@features/heldOrders/pages/HeldOrders";
+import Orders from "@features/orders/pages/Orders";
+import Dashboard from "@features/dashboard/pages/Dashboard";
+import Kitchen from "@features/kitchen/pages/Kitchen";
+import KitchenReceiving from "@features/kitchen/pages/KitchenReceiving";
+import Ingredients from "@features/ingredients/pages/Ingredients";
+import Recipes from "@features/recipes/pages/Recipes";
+import AdminReceiving from "@features/adminReceiving/pages/AdminReceiving";
+import ProtectedRoute from "@shared/components/ProtectedRoute";
 
 function AppRoutes() {
     const location = useLocation();

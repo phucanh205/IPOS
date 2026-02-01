@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import { createIngredient, deleteIngredient, getIngredients, updateIngredient } from "../services/api";
+import Sidebar from "@shared/components/Sidebar";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import { createIngredient, deleteIngredient, getIngredients, updateIngredient } from "@shared/api/apiClient";
 
 const DISPLAY_UNIT_OPTIONS = [
     { value: "pcs", label: "Chiếc" },

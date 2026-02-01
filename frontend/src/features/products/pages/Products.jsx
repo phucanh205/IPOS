@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import SearchBar from "../components/SearchBar";
-import CategoryFilters from "../components/CategoryFilters";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import ProductFormModal from "../components/ProductFormModal";
-import ProductDetailModal from "../components/ProductDetailModal";
-import DeleteConfirmModal from "../components/DeleteConfirmModal";
-import { useAuth } from "../contexts/AuthContext";
+import Sidebar from "@shared/components/Sidebar";
+import SearchBar from "@shared/components/SearchBar";
+import CategoryFilters from "@features/products/components/CategoryFilters";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import ProductFormModal from "@features/products/components/ProductFormModal";
+import ProductDetailModal from "@features/products/components/ProductDetailModal";
+import DeleteConfirmModal from "@shared/components/DeleteConfirmModal";
+import { useAuth } from "@features/auth/context/AuthContext";
 import {
     getProducts,
     getCategories,
@@ -16,7 +16,7 @@ import {
     createProduct,
     updateProduct,
     deleteProduct,
-} from "../services/api";
+} from "@shared/api/apiClient";
 
 function Products() {
     const { user } = useAuth();

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import { getDashboardStats } from "../services/api";
+import Sidebar from "@shared/components/Sidebar";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import { getDashboardStats } from "@shared/api/apiClient";
 
 function Dashboard() {
     const [stats, setStats] = useState(null);

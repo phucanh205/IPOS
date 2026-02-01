@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import DateTimeDisplay from "../components/DateTimeDisplay";
-import api from "../services/api";
+import Sidebar from "@shared/components/Sidebar";
+import DateTimeDisplay from "@shared/components/DateTimeDisplay";
+import api from "@shared/api/apiClient";
 
 function AdminReceiving() {
     const [loading, setLoading] = useState(true);

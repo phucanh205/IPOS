@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { uploadImage } from "../services/api";
+import { uploadImage } from "@shared/api/apiClient";
 
 function ProductFormModal({ open, categories, initialData, onClose, onSave }) {
     const [name, setName] = useState("");
