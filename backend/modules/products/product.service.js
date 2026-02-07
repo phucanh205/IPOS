@@ -194,7 +194,26 @@ export const productService = {
             inStock: true,
         });
 
-        const savedProduct = await product.save();
+        let savedProduct;
+        try {
+            savedProduct = await product.save();
+        } catch (e) {
+            const msg = String(e?.message || "");
+            if (msg.includes("E11000") || msg.toLowerCase().includes("duplicate key")) {
+                const keyValue = e?.keyValue && typeof e.keyValue === "object" ? e.keyValue : null;
+                const duplicateField = keyValue ? Object.keys(keyValue)[0] : "";
+                const duplicateValue = keyValue ? keyValue[duplicateField] : "";
+                const err = new Error("DUPLICATE_KEY");
+                err.status = 409;
+                err.body = {
+                    error: "Product already exists",
+                    duplicateField,
+                    duplicateValue,
+                };
+                throw err;
+            }
+            throw e;
+        }
         const populatedProduct = await Product.findById(savedProduct._id).populate(
             "category",
             "name slug"

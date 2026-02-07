@@ -6,7 +6,8 @@
     "type": "module",
     "scripts": {
         "start": "node server.js",
-        "dev": "node --watch server.js"
+        "dev": "node --watch server.js",
+        "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest"
     },
     "keywords": [
         "pos",
@@ -23,5 +24,10 @@
         "mongoose": "^8.0.3",
         "multer": "^2.0.2",
         "socket.io": "^4.8.3"
+    },
+    "devDependencies": {
+        "jest": "^30.0.5",
+        "supertest": "^7.0.0",
+        "cross-env": "^7.0.3"
     }
 }

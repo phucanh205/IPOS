@@ -25,11 +25,11 @@ const seedUsers = [
 async function seedDatabase() {
     try {
         await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/pos_system");
-        console.log("✅ Connected to MongoDB");
+        console.log("Connected to MongoDB");
 
         // Clear existing users
         await User.deleteMany({});
-        console.log("🗑️ Cleared existing users");
+        console.log("Cleared existing users");
 
         // Insert seed users one by one to avoid userID conflicts
         for (const userData of seedUsers) {
@@ -38,17 +38,17 @@ async function seedDatabase() {
             console.log(`  - ${user.username} (${user.role}) - ID: ${user.userID}`);
         }
 
-        console.log("\n✅ Database seeded successfully!");
-        console.log("\n📝 Login credentials for testing:");
+        console.log("\n Database seeded successfully!");
+        console.log("\n Login credentials for testing:");
         console.log("  Admin: admin / admin123");
         console.log("  Cashier: cashier / cashier123"); 
         console.log("  Kitchen: kitchen / kitchen123");
 
     } catch (error) {
-        console.error("❌ Error seeding database:", error);
+        console.error("Error seeding database:", error);
     } finally {
         await mongoose.disconnect();
-        console.log("🔌 Disconnected from MongoDB");
+        console.log("Disconnected from MongoDB");
     }
 }
 

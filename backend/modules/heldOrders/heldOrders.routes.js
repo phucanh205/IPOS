@@ -1,7 +1,12 @@
 import express from "express";
 import { heldOrderController } from "./heldOrders.controller.js";
+import { authenticateAndCheckRole } from "../../shared/middleware/auth.js";
 
 const router = express.Router();
+
+const allowCashierOnly = authenticateAndCheckRole("cashier");
+
+router.use(...allowCashierOnly);
 
 // Get all held orders
 router.get("/", heldOrderController.list);

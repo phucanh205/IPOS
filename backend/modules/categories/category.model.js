@@ -9,7 +9,6 @@ const categorySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true,
         trim: true,
     },
     slug: {
@@ -32,9 +31,36 @@ categorySchema.pre("save", async function (next) {
     if (this.isNew && !this.categoryID) {
         try {
             const Category = this.constructor;
-            const count = await Category.countDocuments();
-            // Format: CAT001, CAT002, etc.
-            this.categoryID = `CAT${String(count + 1).padStart(3, "0")}`;
+            // Do not use countDocuments() because deletions can cause duplicates.
+            // Find the current max CATxxx and increment.
+            const last = await Category.findOne({ categoryID: /^CAT\d{3,}$/ })
+                .sort({ categoryID: -1 })
+                .select("categoryID")
+                .lean();
+
+            const lastNum = (() => {
+                const id = String(last?.categoryID || "");
+                const m = id.match(/^CAT(\d+)$/);
+                return m ? Number(m[1]) : 0;
+            })();
+
+            let nextNum = lastNum + 1;
+            let candidate = `CAT${String(nextNum).padStart(3, "0")}`;
+
+            // Ensure uniqueness in case of concurrent creates
+            // try up to 50 times
+            let tries = 0;
+            while (tries < 50) {
+                const exists = await Category.findOne({ categoryID: candidate })
+                    .select("_id")
+                    .lean();
+                if (!exists) break;
+                nextNum += 1;
+                candidate = `CAT${String(nextNum).padStart(3, "0")}`;
+                tries += 1;
+            }
+
+            this.categoryID = candidate;
         } catch (error) {
             return next(error);
         }

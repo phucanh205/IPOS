@@ -70,7 +70,26 @@ export const heldOrderService = {
             total: total || 0,
         });
 
-        const savedOrder = await heldOrder.save();
+        let savedOrder;
+        try {
+            savedOrder = await heldOrder.save();
+        } catch (e) {
+            const msg = String(e?.message || "");
+            if (msg.includes("E11000") || msg.toLowerCase().includes("duplicate key")) {
+                const keyValue = e?.keyValue && typeof e.keyValue === "object" ? e.keyValue : null;
+                const duplicateField = keyValue ? Object.keys(keyValue)[0] : "";
+                const duplicateValue = keyValue ? keyValue[duplicateField] : "";
+                const err = new Error("DUPLICATE_KEY");
+                err.status = 409;
+                err.body = {
+                    error: "Held order already exists",
+                    duplicateField,
+                    duplicateValue,
+                };
+                throw err;
+            }
+            throw e;
+        }
         const populatedOrder = await HeldOrder.findById(savedOrder._id).populate(
             "items.productId",
             "name image"

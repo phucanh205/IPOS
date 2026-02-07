@@ -53,9 +53,36 @@ productSchema.pre("save", async function (next) {
   if (this.isNew && !this.productID) {
     try {
       const Product = this.constructor;
-      const count = await Product.countDocuments();
+      // Do not use countDocuments() because deletions can cause duplicates.
+      // Find the current max PRDxxx and increment.
+      const last = await Product.findOne({ productID: /^PRD\d{3,}$/ })
+        .sort({ productID: -1 })
+        .select("productID")
+        .lean();
+
+      const lastNum = (() => {
+        const id = String(last?.productID || "");
+        const m = id.match(/^PRD(\d+)$/);
+        return m ? Number(m[1]) : 0;
+      })();
+
+      let nextNum = lastNum + 1;
+      let candidate = `PRD${String(nextNum).padStart(3, "0")}`;
+
+      // Ensure uniqueness in case of concurrent creates
+      let tries = 0;
+      while (tries < 50) {
+        const exists = await Product.findOne({ productID: candidate })
+          .select("_id")
+          .lean();
+        if (!exists) break;
+        nextNum += 1;
+        candidate = `PRD${String(nextNum).padStart(3, "0")}`;
+        tries += 1;
+      }
+
       // Format: PRD001, PRD002, etc.
-      this.productID = `PRD${String(count + 1).padStart(3, "0")}`;
+      this.productID = candidate;
     } catch (error) {
       return next(error);
     }
