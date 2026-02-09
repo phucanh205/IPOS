@@ -13,9 +13,6 @@ function ProductGrid({ products, loading, onProductClick, availabilityByProductI
                 <div className="text-gray-500 text-lg mb-2">
                     Không tìm thấy sản phẩm
                 </div>
-                <div className="text-gray-400 text-sm">
-                    Vui lòng kiểm tra kết nối backend hoặc thử lại sau.
-                </div>
             </div>
         );
     }

@@ -152,7 +152,7 @@ function Orders() {
                                                 order.orderType
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                        <td className="px-12 py-3 text-sm text-gray-700">
                                             {getPaymentMethodText(
                                                 order.paymentMethod
                                             )}
