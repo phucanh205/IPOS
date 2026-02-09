@@ -25,7 +25,7 @@ function ProductGrid({ products, loading, onProductClick, availabilityByProductI
     };
 
     return (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 content-start">
+        <div className="grid grid-cols-[repeat(auto-fill,150px)] justify-between gap-y-3 content-start">
             {products.map((product) => {
                 const pid = product?._id;
                 const avail = pid ? availabilityByProductId?.[pid] : null;
@@ -36,7 +36,7 @@ function ProductGrid({ products, loading, onProductClick, availabilityByProductI
                     key={product._id}
                     disabled={disabled}
                     onClick={() => onProductClick(product)}
-                    className={`group bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left ${
+                    className={`group w-[150px] bg-gray-50 rounded-lg border border-gray-300 overflow-hidden transition-colors text-left ${
                         disabled ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                 >
@@ -66,11 +66,11 @@ function ProductGrid({ products, loading, onProductClick, availabilityByProductI
                             </div>
                         )}
                     </div>
-                    <div className="p-3">
-                        <div className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.25rem]">
+                    <div className="p-2.5">
+                        <div className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.1rem]">
                             {product.name}
                         </div>
-                        <div className="mt-2 flex items-center justify-between">
+                        <div className="mt-1.5 flex items-center justify-between">
                             <span className="text-sm font-semibold text-gray-900">
                                 {formatPrice(product.price)}
                             </span>
@@ -81,7 +81,7 @@ function ProductGrid({ products, loading, onProductClick, availabilityByProductI
                                     e.stopPropagation();
                                     onProductClick(product);
                                 }}
-                                className={`h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-900 inline-flex items-center justify-center transition-colors ${
+                                className={`h-7 w-7 rounded-full border border-gray-300 bg-white text-gray-900 inline-flex items-center justify-center transition-colors ${
                                     disabled ? "opacity-50 cursor-not-allowed" : ""
                                 }`}
                                 title="Thêm vào giỏ"

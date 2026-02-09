@@ -700,7 +700,7 @@ function Home() {
                     {/* Main Content with Order Panel */}
                     <div className="flex-1 overflow-hidden flex">
                         <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
-                            <div className="max-w-[1100px]">
+                            <div className="w-full max-w-none">
                                 <ProductGrid
                                     products={products}
                                     loading={loading}
