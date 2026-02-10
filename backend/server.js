@@ -19,6 +19,8 @@ import kitchenRoutes from "./modules/kitchen/kitchen.routes.js";
 import adminReceivingRoutes from "./modules/adminReceiving/adminReceiving.routes.js";
 import toppingsRoutes from "./modules/toppings/toppings.routes.js";
 import { authenticateAndCheckRole } from "./shared/middleware/auth.js";
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +36,10 @@ initSocket(httpServer);
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// swagger
+const swaggerFile = JSON.parse(fs.readFileSync("./docs/swagger.json", "utf8"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
