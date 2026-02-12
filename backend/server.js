@@ -21,6 +21,7 @@ import toppingsRoutes from "./modules/toppings/toppings.routes.js";
 import { authenticateAndCheckRole } from "./shared/middleware/auth.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
+import { seedDefaultUsers } from "./scripts/seedUsers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,8 +83,12 @@ app.get("/api/health", (req, res) => {
 // Connect to MongoDB
 mongoose
     .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/pos_system")
-    .then(() => {
+    .then(async () => {
         console.log("✅ Connected to MongoDB");
+        
+        // Seed default users if they don't exist
+        await seedDefaultUsers();
+        
         httpServer.listen(PORT, () => {
             console.log(`Server đang chạy trên http://localhost:${PORT}`);
         });

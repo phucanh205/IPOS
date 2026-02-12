@@ -67,12 +67,15 @@ Hệ thống xoay quanh 3 vai trò chính:
 - Node.js 18+ (khuyến nghị)
 - MongoDB chạy local hoặc có connection string trong `backend/.env`
 
+### Tài khoản mặc định
+
+Hệ thống sẽ tự động tạo các tài khoản sau khi khởi động:
+
+- **Admin**: `admin` / `admin123` - Quản lý toàn bộ hệ thống
+- **Thu ngân**: `cashier` / `cashier123` - Tạo đơn hàng
+- **Bếp**: `kitchen` / `kitchen123` - Xử lý đơn hàng
+
 ### Cấu hình môi trường (Backend)
-
-Backend sử dụng `dotenv` để load biến môi trường từ file `.env`.
-
-1. Copy file mẫu:
-
 ```bash
 cp backend/.env.example backend/.env
 ```

@@ -22,14 +22,14 @@ const seedUsers = [
     }
 ];
 
-async function seedDatabase() {
+export async function seedDefaultUsers() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/pos_system");
-        console.log("Connected to MongoDB");
-
-        // Clear existing users
-        await User.deleteMany({});
-        console.log("Cleared existing users");
+        // Check if users already exist
+        const existingUsers = await User.countDocuments();
+        if (existingUsers > 0) {
+            console.log("Users already exist, skipping seed");
+            return;
+        }
 
         // Insert seed users one by one to avoid userID conflicts
         for (const userData of seedUsers) {
@@ -38,18 +38,13 @@ async function seedDatabase() {
             console.log(`  - ${user.username} (${user.role}) - ID: ${user.userID}`);
         }
 
-        console.log("\n Database seeded successfully!");
-        console.log("\n Login credentials for testing:");
+        console.log("Default users created successfully!");
+        console.log("Login credentials:");
         console.log("  Admin: admin / admin123");
         console.log("  Cashier: cashier / cashier123"); 
         console.log("  Kitchen: kitchen / kitchen123");
 
     } catch (error) {
-        console.error("Error seeding database:", error);
-    } finally {
-        await mongoose.disconnect();
-        console.log("Disconnected from MongoDB");
+        console.error("Error seeding default users:", error);
     }
 }
-
-seedDatabase();
